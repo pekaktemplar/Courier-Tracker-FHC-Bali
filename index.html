@@ -258,7 +258,10 @@
         async function clientAddOrder(event) {
             event.preventDefault();
             const sampleTypes = getSelectedSampleTypes('clientSampleTypes');
-            if (sampleTypes.length === 0) return alert('Pilih minimal satu jenis sampel atau permintaan.');
+            if (sampleTypes.length === 0) {
+                alert('Pilih minimal satu jenis sampel atau permintaan.');
+                return;
+            }
 
             const bhpCheckbox = document.getElementById('client_bhp');
             const bhpDetailsText = document.getElementById('clientBhpDetails').value;
@@ -382,6 +385,7 @@
         }
         
         async function updateCourierDutyStatus() {
+            if (!localCouriers.length || !localOrders.length) return;
             for (const courier of localCouriers) {
                 const hasActiveTask = localOrders.some(o => o.courier === courier.name && !['Selesai', 'Terverifikasi'].includes(o.status));
                 const newStatus = hasActiveTask ? 'Menjalankan Tugas' : 'Tersedia';
