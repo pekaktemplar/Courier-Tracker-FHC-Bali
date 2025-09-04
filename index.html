@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pelacakan Pengambilan Sampel - Fullerton Health</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal { transition: opacity 0.25s ease; }
+        .modal-active { overflow: hidden; }
+        .modal-content { transition: transform 0.25s ease; }
+        .status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 500; font-size: 0.8rem; white-space: nowrap; }
+        .status-baru { background-color: #e0f2fe; color: #0c4a6e; }
+        .status-pickup { background-color: #fef9c3; color: #854d0e; }
+        .status-lanjut { background-color: #fef3c7; color: #b45309; }
+        .status-kendala { background-color: #fee2e2; color: #991b1b; }
+        .status-selesai { background-color: #dcfce7; color: #166534; }
+        .status-verifikasi { background-color: #e0e7ff; color: #3730a3; }
+        .courier-status-tersedia { border-color: #22c55e; }
+        .courier-status-istirahat { border-color: #f59e0b; }
+        .courier-status-tugas { border-color: #3b82f6; }
+        .sample-checkbox:checked + label { background-color: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
+        <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+        <p class="mt-4 text-gray-600">Memuat Aplikasi...</p>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginContainer" class="hidden min-h-screen flex items-center justify-center bg-gray-50">
+        <div class="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-lg text-center">
+            <div>
+                <h1 class="text-3xl font-bold text-center text-gray-900">Selamat Datang</h1>
+                <p class="text-center text-gray-500">Sistem Pelacakan Sampel Fullerton Health</p>
+            </div>
+            <button id="loginWithGoogleBtn" class="w-full flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                <img class="w-5 h-5 mr-2" src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo">
+                Masuk dengan Google
+            </button>
+            <p id="loginError" class="text-red-500 text-sm mt-2"></p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="mainAppContainer" class="hidden container mx-auto p-4 md:p-6">
+        <!-- Header -->
+        <header class="mb-6 flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Dashboard Pelacakan</h1>
+                <p class="text-gray-500">Login sebagai: <span id="roleDisplay" class="font-semibold"></span></p>
+            </div>
+            <div class="mt-4 md:mt-0 flex flex-wrap items-center justify-center md:justify-end gap-3">
+                 <div id="exportDateFilter" class="hidden w-full md:w-auto flex-wrap items-center justify-center gap-2 bg-white p-2 rounded-lg shadow-sm">
+                     <input type="date" id="startDate" class="p-1 border border-gray-200 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 flex-grow">
+                     <span class="text-gray-500 text-sm">s/d</span>
+                     <input type="date" id="endDate" class="p-1 border border-gray-200 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 flex-grow">
+                 </div>
+                 <button id="exportBtn" onclick="exportToCsv()" class="hidden bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition duration-300 flex items-center">
+                    <i class="fas fa-file-excel mr-2"></i> Ekspor
+                 </button>
+                 <button id="addOrderBtn" onclick="openModalForRole()" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 flex items-center">
+                    <i class="fas fa-plus mr-2"></i> Buat Orderan
+                </button>
+                 <button onclick="logout()" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-600 transition duration-300 flex items-center">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Keluar
+                </button>
+            </div>
+        </header>
+        
+        <!-- Status Kurir -->
+        <div id="courierStatusPanel" class="mb-6 p-4 bg-white rounded-xl shadow">
+             <h3 class="font-bold text-lg mb-3">Status Kurir</h3>
+             <div id="courierStatusList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"></div>
+        </div>
+
+        <!-- Filter -->
+        <div id="filterPanel" class="mb-6 p-4 bg-white rounded-xl shadow">
+            <div class="flex flex-col md:flex-row md:items-center justify-between">
+                <div id="courierFilterDiv" class="flex items-center space-x-4">
+                    <label for="courierFilter" class="font-semibold mb-2 md:mb-0">Filter Kurir:</label>
+                    <select id="courierFilter" onchange="renderOrders()" class="w-full md:w-auto p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="semua">Semua Kurir</option>
+                    </select>
+                </div>
+                <div id="showCompletedDiv" class="mt-4 md:mt-0">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="showCompletedToggle" onchange="renderOrders()" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Tampilkan Order Selesai</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daftar Orderan -->
+        <main id="orderList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></main>
+    </div>
+
+    <!-- Modals -->
+    <div id="adminAddOrderModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-lg p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Buat Orderan Baru (Admin)</h2><form id="adminAddOrderForm"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="mb-4 col-span-2"><label for="adminClinicName" class="block text-sm font-medium text-gray-700 mb-1">Nama Faskes</label><input type="text" id="adminClinicName" list="clinic-list" class="w-full p-2 border border-gray-300 rounded-lg" required><datalist id="clinic-list"></datalist></div><div class="mb-4"><label for="adminShift" class="block text-sm font-medium text-gray-700 mb-1">Shift</label><select id="adminShift" class="w-full p-2 border border-gray-300 rounded-lg" required><option value="Shift 1">Shift 1</option><option value="Shift 2">Shift 2</option></select></div><div class="mb-4"><label for="adminOrderType" class="block text-sm font-medium text-gray-700 mb-1">Jenis Orderan</label><select id="adminOrderType" class="w-full p-2 border border-gray-300 rounded-lg" required><option value="Rutin">Rutin</option><option value="CITO">CITO</option></select></div><div class="mb-4"><label for="adminCourier" class="block text-sm font-medium text-gray-700 mb-1">Pilih Kurir</label><select id="adminCourier" class="w-full p-2 border border-gray-300 rounded-lg" required></select></div><div class="mb-4"><label for="adminRegionalArea" class="block text-sm font-medium text-gray-700 mb-1">Area Regional</label><select id="adminRegionalArea" class="w-full p-2 border border-gray-300 rounded-lg" required><option>CANGGU</option><option>SEMINYAK</option><option>KUTA</option><option>DENPASAR</option><option>UBUD</option><option>PECATU</option><option>ULUWATU</option><option>LAINNYA</option></select></div></div><div class="mb-4 col-span-2"><label class="block text-sm font-medium text-gray-700 mb-2">Jenis Sampel</label><div id="adminSampleTypes" class="grid grid-cols-2 gap-2"><div><input type="checkbox" id="admin_darah" value="Darah" class="hidden sample-checkbox"><label for="admin_darah" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">🩸 Darah</label></div><div><input type="checkbox" id="admin_urine" value="Urine" class="hidden sample-checkbox"><label for="admin_urine" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💧 Urine</label></div><div><input type="checkbox" id="admin_feses" value="Feses" class="hidden sample-checkbox"><label for="admin_feses" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💩 Feses</label></div><div><input type="checkbox" id="admin_bhp" value="BHP" class="hidden sample-checkbox"><label for="admin_bhp" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">📦 BHP</label></div></div></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('adminAddOrderModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Simpan</button></div></form></div></div>
+    <div id="clientAddOrderModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Buat Permintaan Pickup</h2><p class="text-gray-500 mb-4">Order untuk: <span id="clientModalClinicName" class="font-bold"></span></p><form id="clientAddOrderForm"><div class="mb-4 col-span-2"><label class="block text-sm font-medium text-gray-700 mb-2">Pilih Jenis Sampel</label><div id="clientSampleTypes" class="grid grid-cols-2 gap-2"><div><input type="checkbox" id="client_darah" value="Darah" class="hidden sample-checkbox"><label for="client_darah" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">🩸 Darah</label></div><div><input type="checkbox" id="client_urine" value="Urine" class="hidden sample-checkbox"><label for="client_urine" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💧 Urine</label></div><div><input type="checkbox" id="client_feses" value="Feses" class="hidden sample-checkbox"><label for="client_feses" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💩 Feses</label></div><div><input type="checkbox" id="client_bhp" value="BHP" class="hidden sample-checkbox"><label for="client_bhp" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">📦 BHP</label></div></div></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('clientAddOrderModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Kirim</button></div></form></div></div>
+    <div id="issueModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Laporkan Kendala</h2><form id="issueForm"><input type="hidden" id="issueOrderId"><div class="mb-4"><label for="issueDescription" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label><textarea id="issueDescription" rows="4" class="w-full p-2 border border-gray-300 rounded-lg" required></textarea></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('issueModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700">Kirim</button></div></form></div></div>
+    <div id="verificationModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Verifikasi Sampel</h2><form id="verificationForm"><input type="hidden" id="verificationOrderId"><div class="mb-4"><label for="sampleCount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Sampel</label><input type="number" id="sampleCount" class="w-full p-2 border border-gray-300 rounded-lg" required></div><div class="mb-4"><label for="verificationNotes" class="block text-sm font-medium text-gray-700 mb-1">Catatan</label><textarea id="verificationNotes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg"></textarea></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('verificationModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700">Konfirmasi</button></div></form></div></div>
+    <div id="assignCourierModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Tugaskan Kurir</h2><form id="assignCourierForm"><input type="hidden" id="assignOrderId"><div class="mb-4"><label for="assignCourierSelector" class="block text-sm font-medium text-gray-700 mb-1">Pilih Kurir</label><select id="assignCourierSelector" class="w-full p-2 border border-gray-300 rounded-lg" required></select></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('assignCourierModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Tugaskan</button></div></form></div></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        
+        // --- KONFIGURASI FIREBASE & AKSES PENGGUNA ---
+        // PENTING: Ganti dengan konfigurasi Firebase Anda sendiri.
+        const firebaseConfig = {
+            apiKey: "AIzaSyAB86yQw184i-s_Vq4A4GA4bLl2Ujbiug8",
+            authDomain: "courier-tracker-fhc-bali.firebaseapp.com",
+            projectId: "courier-tracker-fhc-bali",
+            storageBucket: "courier-tracker-fhc-bali.firebasestorage.app",
+            messagingSenderId: "480867344576",
+            appId: "1:480867344576:web:8b377468854fcb8b49cd25"
+        };
+        
+        // PENTING: Masukkan alamat email yang diizinkan untuk setiap peran.
+        const ACCESS_CONFIG = {
+            superusers: [
+                'pekaktemplar@gmail.com',
+                // Tambahkan email super user lainnya di sini
+            ],
+            admins: [
+                'admin.lab.bali@example.com', 
+                // Tambahkan email admin lainnya di sini
+            ],
+            couriers: {
+                'made.kurir@example.com': 'Made',
+                'firza.kurir@example.com': 'Firza',
+                'nanang.kurir@example.com': 'Nanang',
+                'krisna.kurir@example.com': 'Krisna' // Kurir Baru
+                // Tambahkan 'email.kurir': 'Nama' lainnya di sini
+            },
+            analysts: [
+                'analis.lab.bali@example.com',
+                // Tambahkan email analis lainnya di sini
+            ],
+            clients: {
+                'klinik.medika@example.com': 1, // Key: email, Value: clinicId
+                'klinik.sejahtera@example.com': 2
+                // Tambahkan 'email.client': clinicId lainnya di sini
+            }
+        };
+
+        // --- INISIALISASI APLIKASI ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        // --- STATE MANAGEMENT ---
+        let currentUser = { role: null, name: null, clinicId: null, email: null };
+        const couriers = [
+            { name: 'Made', status: 'Tersedia' },
+            { name: 'Firza', status: 'Tersedia' },
+            { name: 'Nanang', status: 'Tersedia' },
+            { name: 'Krisna', status: 'Tersedia' }, // Kurir Baru
+        ];
+        const clinics = [
+            { id: 1, name: 'Klinik Medika' },
+            { id: 2, name: 'Klinik Sehat Sejahtera' },
+            { id: 3, name: 'Puskesmas Kuta I' },
+            { id: 4, name: 'RS Kasih Ibu' },
+            { id: 5, name: 'Klinik Canggu Care' },
+        ];
+        let orders = []; // Data dikosongkan, siap untuk launching!
+
+        // --- AUTH & UI CONTROL ---
+        
+        function authorizeUser(user) {
+            const email = user.email;
+            let role = null;
+            let name = user.displayName;
+            let clinicId = null;
+            let roleText = '';
+            
+            if (ACCESS_CONFIG.superusers.includes(email)) {
+                role = 'superuser';
+                roleText = 'Super User';
+            } else if (ACCESS_CONFIG.admins.includes(email)) {
+                role = 'admin';
+                roleText = 'Admin';
+            } else if (ACCESS_CONFIG.couriers[email]) {
+                role = 'kurir';
+                name = ACCESS_CONFIG.couriers[email];
+                roleText = `Kurir (${name})`;
+            } else if (ACCESS_CONFIG.analysts.includes(email)) {
+                role = 'analis';
+                roleText = 'Analis Lab';
+            } else if (ACCESS_CONFIG.clients[email]) {
+                role = 'client';
+                clinicId = ACCESS_CONFIG.clients[email];
+                const clinic = clinics.find(c => c.id === clinicId);
+                name = clinic.name;
+                roleText = `Client (${name})`;
+            }
+
+            if (role) {
+                currentUser = { role, name, clinicId, email };
+                document.getElementById('roleDisplay').textContent = roleText;
+                document.getElementById('loginContainer').classList.add('hidden');
+                document.getElementById('mainAppContainer').classList.remove('hidden');
+                setupUIForRole();
+                renderAll();
+            } else {
+                document.getElementById('loginError').textContent = 'Anda tidak memiliki akses ke aplikasi ini.';
+                signOut(auth);
+            }
+            document.getElementById('loadingSpinner').classList.add('hidden');
+        }
+        
+        function handleGoogleLogin() {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider)
+                .catch((error) => {
+                    console.error("Login Gagal:", error);
+                    document.getElementById('loginError').textContent = 'Gagal login. Silakan coba lagi.';
+                    document.getElementById('loadingSpinner').classList.add('hidden');
+                });
+        }
+
+        function logout() {
+            signOut(auth);
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authorizeUser(user);
+            } else {
+                currentUser = { role: null, name: null, clinicId: null, email: null };
+                document.getElementById('mainAppContainer').classList.add('hidden');
+                document.getElementById('loginContainer').classList.remove('hidden');
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('loginError').textContent = '';
+            }
+        });
+        
+        function setupUIForRole() {
+            const { role } = currentUser;
+            const addOrderBtn = document.getElementById('addOrderBtn');
+            const courierStatusPanel = document.getElementById('courierStatusPanel');
+            const filterPanel = document.getElementById('filterPanel');
+            const exportBtn = document.getElementById('exportBtn');
+            const showCompletedDiv = document.getElementById('showCompletedDiv');
+            const exportDateFilter = document.getElementById('exportDateFilter');
+            const courierFilterDiv = document.getElementById('courierFilterDiv');
+
+            addOrderBtn.classList.add('hidden');
+            courierStatusPanel.classList.add('hidden');
+            filterPanel.classList.add('hidden');
+            exportBtn.classList.add('hidden');
+            showCompletedDiv.classList.add('hidden');
+            exportDateFilter.classList.add('hidden');
+            courierFilterDiv.classList.remove('hidden');
+
+            if (role === 'admin' || role === 'superuser') {
+                addOrderBtn.classList.remove('hidden');
+                courierStatusPanel.classList.remove('hidden');
+                filterPanel.classList.remove('hidden');
+                exportBtn.classList.remove('hidden');
+                showCompletedDiv.classList.remove('hidden');
+                exportDateFilter.classList.remove('hidden');
+            } else if (role === 'kurir') {
+                courierStatusPanel.classList.remove('hidden');
+            } else if (role === 'analis') {
+                filterPanel.classList.remove('hidden');
+                courierFilterDiv.classList.add('hidden'); 
+                showCompletedDiv.classList.remove('hidden');
+            } else if (role === 'client') {
+                addOrderBtn.classList.remove('hidden');
+            }
+        }
+        
+        function openModalForRole() {
+            if (currentUser.role === 'admin' || currentUser.role === 'superuser') {
+                openModal('adminAddOrderModal');
+            } else if (currentUser.role === 'client') {
+                document.getElementById('clientModalClinicName').textContent = currentUser.name;
+                openModal('clientAddOrderModal');
+            }
+        }
+
+        function formatTimestamp(isoString, includeDate = false) { if (!isoString) return '-'; const date = new Date(isoString); const options = includeDate ? { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' } : { hour: '2-digit', minute: '2-digit' }; return date.toLocaleString('id-ID', options).replace(/\./g, ':'); }
+        function getStatusInfo(status) {
+            switch (status) {
+                case 'Baru': return { class: 'status-baru', icon: 'fa-solid fa-receipt' };
+                case 'Menuju Faskes': return { class: 'status-pickup', icon: 'fa-solid fa-route' };
+                case 'Di Faskes': return { class: 'status-pickup', icon: 'fa-solid fa-hospital' };
+                case 'Lanjut Pickup': return { class: 'status-lanjut', icon: 'fa-solid fa-angles-right'};
+                case 'Kembali ke Lab': return { class: 'status-pickup', icon: 'fa-solid fa-motorcycle' };
+                case 'Kendala': return { class: 'status-kendala', icon: 'fa-solid fa-triangle-exclamation' };
+                case 'Selesai': return { class: 'status-selesai', icon: 'fa-solid fa-check-circle' };
+                case 'Terverifikasi': return { class: 'status-verifikasi', icon: 'fa-solid fa-user-check'};
+                default: return { class: 'bg-gray-200 text-gray-800', icon: 'fa-solid fa-question-circle' };
+            }
+        }
+        
+        function renderAll(){
+            updateCourierDutyStatus();
+            renderCourierStatus();
+            renderOrders();
+        }
+
+        function renderCourierStatus() {
+            const list = document.getElementById('courierStatusList');
+            list.innerHTML = '';
+            const couriersToRender = currentUser.role === 'kurir' ? couriers.filter(c => c.name === currentUser.name) : couriers;
+            couriersToRender.forEach(courier => {
+                let statusClass = '', statusIcon = '', buttonText = '', buttonClass = '';
+                switch(courier.status) {
+                    case 'Tersedia': statusClass = 'courier-status-tersedia text-green-600'; statusIcon = 'fa-solid fa-circle-check'; buttonText = 'Mulai Istirahat'; buttonClass = 'bg-yellow-500 hover:bg-yellow-600'; break;
+                    case 'Istirahat': statusClass = 'courier-status-istirahat text-yellow-600'; statusIcon = 'fa-solid fa-mug-saucer'; buttonText = 'Selesai Istirahat'; buttonClass = 'bg-green-500 hover:bg-green-600'; break;
+                    case 'Menjalankan Tugas': statusClass = 'courier-status-tugas text-blue-600'; statusIcon = 'fa-solid fa-motorcycle'; buttonText = 'Mulai Istirahat'; buttonClass = 'bg-yellow-500 hover:bg-yellow-600'; break;
+                }
+                const canToggleBreak = (['admin', 'superuser'].includes(currentUser.role) && courier.status !== 'Menjalankan Tugas') || (currentUser.role === 'kurir' && courier.status !== 'Menjalankan Tugas' && courier.name === currentUser.name);
+                list.innerHTML += `<div class="border-l-4 ${statusClass} p-3 bg-gray-50 rounded-lg flex justify-between items-center"><div><p class="font-bold">${courier.name}</p><p class="text-sm"><i class="${statusIcon} mr-2"></i>${courier.status}</p></div>${canToggleBreak ? `<button onclick="toggleBreak('${courier.name}')" class="text-white text-xs font-semibold py-1 px-2 rounded ${buttonClass} transition">${buttonText}</button>` : ''}</div>`;
+            });
+        }
+
+        function renderOrders() {
+            const orderList = document.getElementById('orderList');
+            orderList.innerHTML = '';
+            
+            let baseOrders;
+            if (currentUser.role === 'kurir') {
+                baseOrders = orders.filter(o => o.courier === currentUser.name);
+            } else if (currentUser.role === 'client') {
+                baseOrders = orders.filter(o => o.clinicId === currentUser.clinicId);
+            } else if (currentUser.role === 'analis' || currentUser.role === 'superuser') {
+                baseOrders = orders;
+            } else if (currentUser.role === 'admin') {
+                const filterValue = document.getElementById('courierFilter').value;
+                baseOrders = filterValue === 'semua' ? orders : orders.filter(order => order.courier === filterValue);
+            }
+
+            let ordersToDisplay = baseOrders;
+            const showCompletedDiv = document.getElementById('showCompletedDiv');
+            const showCompleted = document.getElementById('showCompletedToggle').checked;
+
+            if (!showCompleted && !showCompletedDiv.classList.contains('hidden')) {
+                ordersToDisplay = baseOrders.filter(o => !['Selesai', 'Terverifikasi'].includes(o.status));
+            }
+            
+            if (ordersToDisplay.length === 0) {
+                orderList.innerHTML = `<div class="col-span-full text-center p-10 bg-white rounded-xl shadow"><i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i><p class="text-gray-500">Tidak ada orderan yang sesuai.</p></div>`;
+                return;
+            }
+
+            ordersToDisplay.sort((a, b) => new Date(b.timestamps.ordered) - new Date(a.timestamps.ordered));
+
+            ordersToDisplay.forEach(order => {
+                const statusInfo = getStatusInfo(order.status);
+                let actionButtons = '';
+                const role = currentUser.role;
+
+                if((role === 'admin' || role === 'superuser') && !order.courier) {
+                    actionButtons += `<button onclick="openModal('assignCourierModal', ${order.id})" class="bg-gray-700 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-gray-800 transition">Tugaskan Kurir</button>`;
+                } else if(role === 'kurir' && order.courier === currentUser.name) {
+                    if (order.status === 'Baru') actionButtons += `<button onclick="updateStatus(${order.id}, 'Menuju Faskes')" class="bg-blue-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-blue-600 transition">Menuju Faskes</button>`;
+                    if (order.status === 'Menuju Faskes') actionButtons += `<button onclick="updateStatus(${order.id}, 'Di Faskes')" class="bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-indigo-600 transition">Tiba di Faskes</button>`;
+                    if (order.status === 'Di Faskes') {
+                        actionButtons += `<button onclick="updateStatus(${order.id}, 'Lanjut Pickup')" class="bg-amber-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-amber-600 transition">Lanjut Pickup</button>`;
+                        actionButtons += `<button onclick="updateStatus(${order.id}, 'Kembali ke Lab')" class="bg-yellow-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-yellow-600 transition">Kembali ke Lab</button>`;
+                    }
+                    if (order.status === 'Lanjut Pickup') {
+                        actionButtons += `<button onclick="updateStatus(${order.id}, 'Kembali ke Lab')" class="bg-yellow-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-yellow-600 transition">Kembali ke Lab</button>`;
+                    }
+                    if (['Kembali ke Lab'].includes(order.status)) {
+                         actionButtons += `<button onclick="updateStatus(${order.id}, 'Selesai')" class="bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-600 transition">Sampai di Lab</button>`;
+                    }
+                    if (order.status === 'Kendala') {
+                        actionButtons += `<button onclick="updateStatus(${order.id}, 'Kembali ke Lab')" class="bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-600 transition">Lanjutkan Tugas</button>`;
+                    }
+                    if (!['Baru', 'Selesai', 'Terverifikasi'].includes(order.status)) actionButtons += `<button onclick="openModal('issueModal', ${order.id})" class="bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-red-600 transition">Ada Kendala</button>`;
+                } else if(role === 'analis') {
+                    if(order.status === 'Selesai') actionButtons += `<button onclick="openModal('verificationModal', ${order.id})" class="bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-indigo-600 transition">Verifikasi Sampel</button>`;
+                }
+
+                let nextDestinationHTML = '';
+                if (order.status === 'Lanjut Pickup') {
+                    const nextOrder = orders.find(o => 
+                        o.courier === order.courier && 
+                        o.status === 'Baru' && 
+                        o.id !== order.id
+                    );
+                    if (nextOrder) {
+                        nextDestinationHTML = `<div class="bg-amber-50 p-3 rounded-lg mt-4 border-l-4 border-amber-400"><p class="text-sm font-semibold text-amber-800"><i class="fas fa-route mr-2"></i>Lanjut Menuju:</p><p class="text-sm text-amber-700 mt-1 font-bold">${nextOrder.clinicName}</p></div>`;
+                    }
+                }
+
+                const card = `<div class="bg-white rounded-xl shadow-lg p-5 flex flex-col justify-between" id="order-${order.id}"><div><div class="flex justify-between items-start mb-3"><div><h3 class="text-xl font-bold text-gray-900">${order.clinicName}</h3><p class="text-sm text-gray-500">Kurir: <span class="font-semibold">${order.courier || 'Belum ditugaskan'}</span></p></div><div class="${statusInfo.class} status-badge"><i class="${statusInfo.icon} mr-2"></i><span>${order.status}</span></div></div><div class="flex items-center text-xs text-gray-500 space-x-4 mb-3 pb-3 border-b border-gray-100"><span><i class="fas fa-map-marker-alt w-4 text-center mr-1 text-gray-400"></i> ${order.regionalArea}</span><span class="font-semibold text-blue-600"><i class="fas fa-tags w-4 text-center mr-1 text-gray-400"></i> ${order.orderType}</span></div><div class="my-3"><p class="font-semibold text-gray-500 text-xs uppercase mb-2">Item Pickup</p><div class="flex flex-wrap gap-2">${order.sampleTypes.map(s => `<span class="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">${s}</span>`).join('')}</div></div><div class="space-y-2 text-sm text-gray-600 my-3"><p class="font-semibold text-gray-500 text-xs uppercase">Timeline Tracking</p><div class="flex justify-between items-center"><span><i class="far fa-clock w-5 text-gray-400"></i> Dibuat:</span> <span class="font-bold text-lg">${formatTimestamp(order.timestamps.ordered)}</span></div><div class="flex justify-between"><span><i class="fas fa-route w-5 text-gray-400"></i> Menuju:</span> <span class="font-medium">${formatTimestamp(order.timestamps.enrouteToFacility)}</span></div><div class="flex justify-between"><span><i class="fas fa-hospital w-5 text-gray-400"></i> Tiba:</span> <span class="font-medium">${formatTimestamp(order.timestamps.arrivedAtFacility)}</span></div><div class="flex justify-between"><span><i class="fas fa-motorcycle w-5 text-gray-400"></i> Kembali:</span> <span class="font-medium">${formatTimestamp(order.timestamps.returningToLab)}</span></div><div class="flex justify-between"><span><i class="fas fa-check-circle w-5 text-gray-400"></i> Sampai:</span> <span class="font-medium">${formatTimestamp(order.timestamps.completed)}</span></div></div>${nextDestinationHTML}${order.status === 'Kendala' ? `<div class="bg-red-50 p-3 rounded-lg mt-4 border-l-4 border-red-400"><p class="text-sm font-semibold text-red-800"><i class="fas fa-triangle-exclamation mr-2"></i>Kendala (${formatTimestamp(order.timestamps.issue)}):</p><p class="text-sm text-red-700 mt-1">${order.issueDescription}</p></div>` : ''}${order.status === 'Terverifikasi' ? `<div class="bg-indigo-50 p-3 rounded-lg mt-4 border-l-4 border-indigo-400"><p class="text-sm font-semibold text-indigo-800"><i class="fas fa-user-check mr-2"></i>Diverifikasi (${formatTimestamp(order.verifiedDetails.timestamp, true)}):</p><p class="text-sm text-indigo-700 mt-1"><b>${order.verifiedDetails.sampleCount} sampel</b>. Catatan: ${order.verifiedDetails.notes || '-'}</p></div>` : ''}</div><div class="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t border-gray-100">${actionButtons}</div></div>`;
+                orderList.innerHTML += card;
+            });
+        }
+
+        function getSelectedSampleTypes(containerId) { return Array.from(document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`)).map(cb => cb.value); }
+        function adminAddOrder(event) { event.preventDefault(); const sampleTypes = getSelectedSampleTypes('adminSampleTypes'); if (sampleTypes.length === 0) { alert('Pilih minimal satu jenis sampel.'); return; } const newOrder = { id: Date.now(), clinicName: document.getElementById('adminClinicName').value, clinicId: clinics.find(c => c.name.toLowerCase() === document.getElementById('adminClinicName').value.toLowerCase())?.id || null, shift: document.getElementById('adminShift').value, orderType: document.getElementById('adminOrderType').value, courier: document.getElementById('adminCourier').value, regionalArea: document.getElementById('adminRegionalArea').value, status: 'Baru', sampleTypes: sampleTypes, timestamps: { ordered: new Date().toISOString(), enrouteToFacility: null, arrivedAtFacility: null, returningToLab: null, completed: null, issue: null, }, verifiedDetails: { sampleCount: null, notes: '', timestamp: null }, }; orders.unshift(newOrder); renderAll(); closeModal('adminAddOrderModal'); event.target.reset(); }
+        function clientAddOrder(event) { event.preventDefault(); const sampleTypes = getSelectedSampleTypes('clientSampleTypes'); if (sampleTypes.length === 0) { alert('Pilih minimal satu jenis sampel.'); return; } const newOrder = { id: Date.now(), clinicId: currentUser.clinicId, clinicName: currentUser.name, courier: null, shift: 'Shift 1', orderType: 'Rutin', regionalArea: 'Belum Ditentukan', status: 'Baru', sampleTypes: sampleTypes, timestamps: { ordered: new Date().toISOString(), enrouteToFacility: null, arrivedAtFacility: null, returningToLab: null, completed: null, issue: null, }, verifiedDetails: { sampleCount: null, notes: '', timestamp: null }, }; orders.unshift(newOrder); renderAll(); closeModal('clientAddOrderModal'); event.target.reset(); }
+        function assignCourier(event) { event.preventDefault(); const orderId = document.getElementById('assignOrderId').value; const courierName = document.getElementById('assignCourierSelector').value; const order = orders.find(o => o.id == orderId); if (order) { order.courier = courierName; } renderAll(); closeModal('assignCourierModal'); }
+        function updateStatus(orderId, newStatus) { const order = orders.find(o => o.id === orderId); if (!order) return; const now = new Date().toISOString(); order.status = newStatus; switch (newStatus) { case 'Menuju Faskes': order.timestamps.enrouteToFacility = now; break; case 'Di Faskes': order.timestamps.arrivedAtFacility = now; break; case 'Lanjut Pickup': const nextOrder = orders.find(o => o.courier === order.courier && o.status === 'Baru' && o.id !== order.id); if (nextOrder) { nextOrder.status = 'Menuju Faskes'; nextOrder.timestamps.enrouteToFacility = now; } break; case 'Kembali ke Lab': order.timestamps.returningToLab = now; orders.forEach(o => { if (o.courier === order.courier && o.status === 'Lanjut Pickup' && o.id !== order.id) { o.status = 'Kembali ke Lab'; o.timestamps.returningToLab = now; } }); break; case 'Selesai': order.timestamps.completed = now; orders.forEach(o => { if (o.courier === order.courier && (o.status === 'Kembali ke Lab' || o.status === 'Lanjut Pickup') && o.id !== order.id) { o.status = 'Selesai'; if (!o.timestamps.completed) o.timestamps.completed = now; } }); break; } renderAll(); }
+        function submitIssue(event) { event.preventDefault(); const orderId = document.getElementById('issueOrderId').value; const description = document.getElementById('issueDescription').value; const order = orders.find(o => o.id == orderId); if(order) { order.status = 'Kendala'; order.timestamps.issue = new Date().toISOString(); order.issueDescription = description; } renderAll(); closeModal('issueModal'); event.target.reset(); }
+        function submitVerification(event) { event.preventDefault(); const orderId = document.getElementById('verificationOrderId').value; const order = orders.find(o => o.id == orderId); if(order) { order.status = 'Terverifikasi'; order.verifiedDetails.sampleCount = document.getElementById('sampleCount').value; order.verifiedDetails.notes = document.getElementById('verificationNotes').value; order.verifiedDetails.timestamp = new Date().toISOString(); } renderAll(); closeModal('verificationModal'); event.target.reset(); }
+        function toggleBreak(courierName) { const courier = couriers.find(c => c.name === courierName); if(courier && (['admin', 'superuser'].includes(currentUser.role) || (currentUser.role === 'kurir' && currentUser.name === courierName))) { if (courier.status !== 'Menjalankan Tugas') { courier.status = courier.status === 'Istirahat' ? 'Tersedia' : 'Istirahat'; } renderCourierStatus(); } }
+        function updateCourierDutyStatus() { couriers.forEach(courier => { const hasActiveTask = orders.some(o => o.courier === courier.name && !['Selesai', 'Terverifikasi'].includes(o.status)); if (courier.status !== 'Istirahat') { courier.status = hasActiveTask ? 'Menjalankan Tugas' : 'Tersedia'; } }); }
+        function exportToCsv() { const startDateString = document.getElementById('startDate').value; const endDateString = document.getElementById('endDate').value; const startDate = startDateString ? new Date(startDateString + 'T00:00:00') : null; const endDate = endDateString ? new Date(endDateString + 'T23:59:59') : null; if (startDate && endDate && startDate > endDate) { alert("Tanggal mulai tidak boleh lebih besar dari tanggal akhir."); return; } let ordersToExport = orders; if (startDate || endDate) { ordersToExport = orders.filter(order => { const orderDate = new Date(order.timestamps.ordered); if (startDate && endDate) { return orderDate >= startDate && orderDate <= endDate; } if (startDate) { return orderDate >= startDate; } if (endDate) { return orderDate <= endDate; } return true; }); } if (ordersToExport.length === 0) { alert("Tidak ada data untuk diekspor pada periode yang dipilih."); return; } const headers = [ "ID Order", "Nama Faskes", "Kurir", "Shift", "Jenis Order", "Regional", "Status", "Item Pickup", "Waktu Order", "Waktu Menuju Faskes", "Waktu Tiba Faskes", "Waktu Kembali ke Lab", "Waktu Sampai di Lab", "Waktu Kendala", "Deskripsi Kendala", "Waktu Verifikasi", "Jumlah Sampel", "Catatan Verifikasi" ]; const rows = ordersToExport.map(order => { const data = [ order.id, `"${order.clinicName}"`, order.courier || "N/A", order.shift, order.orderType, order.regionalArea, order.status, `"${order.sampleTypes.join(', ')}"`, formatTimestamp(order.timestamps.ordered, true), formatTimestamp(order.timestamps.enrouteToFacility, true), formatTimestamp(order.timestamps.arrivedAtFacility, true), formatTimestamp(order.timestamps.returningToLab, true), formatTimestamp(order.timestamps.completed, true), formatTimestamp(order.timestamps.issue, true), `"${order.issueDescription || ''}"`, formatTimestamp(order.verifiedDetails.timestamp, true), order.verifiedDetails.sampleCount || "", `"${order.verifiedDetails.notes || ''}"` ]; return data.join(','); }); const csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + '\n' + rows.join('\n'); const encodedUri = encodeURI(csvContent); let filename = "laporan_pickup_sampel.csv"; if (startDateString && endDateString) { filename = `laporan_pickup_${startDateString}_sd_${endDateString}.csv`; } else if (startDateString) { filename = `laporan_pickup_dari_${startDateString}.csv`; } else if (endDateString) { filename = `laporan_pickup_sampai_${endDateString}.csv`; } const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", filename); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+        function openModal(modalId, orderId = null) { if (orderId) { if (modalId === 'issueModal') document.getElementById('issueOrderId').value = orderId; if (modalId === 'verificationModal') document.getElementById('verificationOrderId').value = orderId; if (modalId === 'assignCourierModal') document.getElementById('assignOrderId').value = orderId; } const modal = document.getElementById(modalId); modal.classList.remove('hidden'); document.body.classList.add('modal-active'); setTimeout(() => modal.querySelector('.modal-content').classList.remove('scale-95'), 10); }
+        function closeModal(modalId) { const modal = document.getElementById(modalId); modal.querySelector('.modal-content').classList.add('scale-95'); setTimeout(() => { modal.classList.add('hidden'); document.body.classList.remove('modal-active'); }, 250); }
+        
+        // --- INITIALIZATION ---
+        function populateSelectors() {
+            const adminCourierSelector = document.getElementById('adminCourier');
+            const courierFilter = document.getElementById('courierFilter');
+            const assignCourierSel = document.getElementById('assignCourierSelector');
+            const clinicDataList = document.getElementById('clinic-list');
+            
+            [adminCourierSelector, courierFilter, assignCourierSel].forEach(sel => {
+                if(sel.id === 'courierFilter') sel.innerHTML = '<option value="semua">Semua Kurir</option>'; else sel.innerHTML = '';
+                couriers.forEach(c => sel.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+            });
+
+            clinicDataList.innerHTML = '';
+            const uniqueClinicNames = [...new Set(clinics.map(c => c.name))];
+            uniqueClinicNames.forEach(name => {
+                clinicDataList.innerHTML += `<option value="${name}">`;
+            });
+        }
+        
+        // Ensure functions are globally accessible for onclick handlers
+        window.openModalForRole = openModalForRole;
+        window.logout = logout;
+        window.exportToCsv = exportToCsv;
+        window.renderOrders = renderOrders;
+        window.toggleBreak = toggleBreak;
+        window.updateStatus = updateStatus;
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateSelectors();
+            document.getElementById('loginWithGoogleBtn').addEventListener('click', handleGoogleLogin);
+            document.getElementById('adminAddOrderForm').addEventListener('submit', adminAddOrder);
+            document.getElementById('clientAddOrderForm').addEventListener('submit', clientAddOrder);
+            document.getElementById('assignCourierForm').addEventListener('submit', assignCourier);
+            document.getElementById('issueForm').addEventListener('submit', submitIssue);
+            document.getElementById('verificationForm').addEventListener('submit', submitVerification);
+        });
+    </script>
+</body>
+</html>
+
