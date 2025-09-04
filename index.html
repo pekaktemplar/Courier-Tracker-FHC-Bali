@@ -609,13 +609,12 @@
             courierFilter.innerHTML = '<option value="semua">Semua Kurir</option>';
             allCourierNames.forEach(name => courierFilter.innerHTML += `<option value="${name}">${name}</option>`);
 
-            // Populate selector that needs ONLY AVAILABLE couriers (for assigning tasks)
-            const availableCouriers = localCouriers.filter(c => c.status === 'Tersedia' || c.status === 'Istirahat').map(c => c.name).sort();
-            assignCourierSel.innerHTML = '<option value="">Pilih kurir...</option>'; // Placeholder
-            if (availableCouriers.length > 0) {
-                availableCouriers.forEach(name => assignCourierSel.innerHTML += `<option value="${name}">${name}</option>`);
+            // Populate selector for assigning tasks with ALL couriers
+            assignCourierSel.innerHTML = '<option value="">Pilih kurir...</option>';
+            if (allCourierNames.length > 0) {
+                allCourierNames.forEach(name => assignCourierSel.innerHTML += `<option value="${name}">${name}</option>`);
             } else {
-                assignCourierSel.innerHTML = '<option value="">Tidak ada kurir tersedia</option>';
+                assignCourierSel.innerHTML = '<option value="">Tidak ada data kurir</option>';
             }
 
             // Populate clinic datalist
