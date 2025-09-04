@@ -438,31 +438,36 @@
             const exportDateFilter = document.getElementById('exportDateFilter');
             const courierFilterDiv = document.getElementById('courierFilterDiv');
 
+            // Hide all panels by default
             addOrderBtn.classList.add('hidden');
             courierStatusPanel.classList.add('hidden');
             filterPanel.classList.add('hidden');
             exportBtn.classList.add('hidden');
-            showCompletedDiv.classList.add('hidden');
-            exportDateFilter.classList.add('hidden');
-            courierFilterDiv.classList.remove('hidden');
-
-            if (role === 'admin' || role === 'superuser' || role === 'analis' || role === 'kurir' || role === 'client') {
+            
+            // Show panels based on role
+            if (['admin', 'superuser', 'analis', 'kurir', 'client'].includes(role)) {
                 exportBtn.classList.remove('hidden');
                 exportDateFilter.classList.remove('hidden');
             }
 
-            if (role === 'admin' || role === 'superuser') {
+            if (['admin', 'superuser', 'client'].includes(role)) {
                 addOrderBtn.classList.remove('hidden');
+            }
+
+            if (['admin', 'superuser', 'kurir'].includes(role)) {
                 courierStatusPanel.classList.remove('hidden');
+            }
+            
+            // Setup Filter Panel
+            if (['admin', 'superuser', 'analis', 'kurir', 'client'].includes(role)) {
                 filterPanel.classList.remove('hidden');
                 showCompletedDiv.classList.remove('hidden');
-            } else if (role === 'kurir') {
-                courierStatusPanel.classList.remove('hidden');
-            } else if (role === 'analis') {
-                filterPanel.classList.remove('hidden');
-                courierFilterDiv.classList.add('hidden'); 
-            } else if (role === 'client') {
-                addOrderBtn.classList.remove('hidden');
+
+                if (['analis', 'kurir', 'client'].includes(role)) {
+                    courierFilterDiv.classList.add('hidden');
+                } else {
+                    courierFilterDiv.classList.remove('hidden');
+                }
             }
         }
         
@@ -524,12 +529,14 @@
             let ordersForCurrentShift = baseOrders.filter(o => o.shift === currentActiveShift);
             
             let ordersToDisplay = ordersForCurrentShift;
+            const showCompleted = document.getElementById('showCompletedToggle').checked;
 
-            if (['kurir', 'client'].includes(currentUser.role)) {
-                ordersToDisplay = ordersToDisplay.filter(o => !['Selesai', 'Terverifikasi'].includes(o.status));
-            } else if (['admin', 'superuser'].includes(currentUser.role)) {
-                const showCompleted = document.getElementById('showCompletedToggle').checked;
-                if (!showCompleted) {
+            if (!showCompleted) {
+                if (currentUser.role === 'analis') {
+                    // Hide only fully verified orders, so they can still see 'Selesai' orders to work on.
+                    ordersToDisplay = ordersToDisplay.filter(o => o.status !== 'Terverifikasi');
+                } else {
+                    // For all other roles, hide both Selesai and Terverifikasi.
                     ordersToDisplay = ordersToDisplay.filter(o => !['Selesai', 'Terverifikasi'].includes(o.status));
                 }
             }
