@@ -112,7 +112,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, query } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, query, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
         // --- KONFIGURASI FIREBASE & AKSES PENGGUNA ---
         const firebaseConfig = {
@@ -158,6 +158,29 @@
         let localCouriers = [];
         let unsubscribeOrders = null;
         let unsubscribeCouriers = null;
+
+        // --- FUNGSI SINKRONISASI KURIR ---
+        async function syncCouriersWithDatabase() {
+            console.log("Memulai sinkronisasi data kurir dari config ke database...");
+            const courierConfig = ACCESS_CONFIG.couriers;
+            for (const email in courierConfig) {
+                const name = courierConfig[email];
+                const courierRef = doc(db, "couriers", email); // Menggunakan email sebagai ID dokumen unik
+                try {
+                    const docSnap = await getDoc(courierRef);
+                    if (!docSnap.exists()) {
+                        console.log(`Kurir ${name} (${email}) tidak ditemukan di DB. Menambahkan...`);
+                        await setDoc(courierRef, {
+                            name: name,
+                            status: 'Tersedia' // Status default saat pertama kali dibuat
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Gagal menyinkronkan kurir ${name}:`, error);
+                }
+            }
+            console.log("Sinkronisasi kurir selesai.");
+        }
         
         // --- AUTH & UI CONTROL ---
         function authorizeUser(user) {
@@ -175,6 +198,12 @@
                 document.getElementById('roleDisplay').textContent = roleText;
                 document.getElementById('loginContainer').classList.add('hidden');
                 document.getElementById('mainAppContainer').classList.remove('hidden');
+                
+                // Jalankan sinkronisasi jika login sebagai admin/superuser
+                if (role === 'admin' || role === 'superuser') {
+                    syncCouriersWithDatabase();
+                }
+
                 setupUIForRole();
                 subscribeToData();
             } else {
