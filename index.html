@@ -19,7 +19,7 @@
         .status-kendala { background-color: #fee2e2; color: #991b1b; }
         .status-selesai { background-color: #dcfce7; color: #166534; }
         .status-verifikasi { background-color: #e0e7ff; color: #3730a3; }
-        .status-dibatalkan { background-color: #e5e7eb; color: #4b5563; } /* Status baru */
+        .status-dibatalkan { background-color: #e5e7eb; color: #4b5563; }
         .courier-status-tersedia { border-color: #22c55e; }
         .courier-status-istirahat { border-color: #f59e0b; }
         .courier-status-tugas { border-color: #3b82f6; }
@@ -45,6 +45,16 @@
                 <img class="w-5 h-5 mr-2" src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo">
                 Masuk dengan Google
             </button>
+            <!-- Development Login Fallback -->
+            <div id="devLogin" class="hidden w-full space-y-4 text-left pt-4 border-t">
+                <p class="text-sm text-orange-800 bg-orange-100 p-3 rounded-md border border-orange-200">
+                    <i class="fas fa-wrench mr-2"></i> <b>Mode Login Pengembangan</b>
+                    <span class="block mt-1">Pilih pengguna di bawah ini untuk masuk.</span>
+                </p>
+                <label for="devUserSelect" class="block text-sm font-medium text-gray-700">Pilih Pengguna:</label>
+                <select id="devUserSelect" class="w-full p-2 border border-gray-300 rounded-lg"></select>
+                <button id="devLoginBtn" class="w-full py-2.5 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">Masuk sebagai User Terpilih</button>
+            </div>
             <p id="loginError" class="text-red-500 text-sm mt-2"></p>
         </div>
     </div>
@@ -104,7 +114,7 @@
     </div>
 
     <!-- Modals -->
-    <div id="adminAddOrderModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-lg p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Buat Orderan Baru (Admin)</h2><form id="adminAddOrderForm"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="col-span-2"><label for="adminClinicName" class="block text-sm font-medium text-gray-700 mb-1">Nama Faskes</label><input type="text" id="adminClinicName" list="clinic-list" class="w-full p-2 border border-gray-300 rounded-lg" required><datalist id="clinic-list"></datalist></div><div><label for="adminShift" class="block text-sm font-medium text-gray-700 mb-1">Shift</label><select id="adminShift" class="w-full p-2 border border-gray-300 rounded-lg" required><option value="Shift 1">Shift 1 (08.00 - 14.00 WITA)</option><option value="Shift 2">Shift 2 (14.00 - 21.00 WITA)</option></select></div><div><label for="adminOrderType" class="block text-sm font-medium text-gray-700 mb-1">Jenis Orderan</label><select id="adminOrderType" class="w-full p-2 border border-gray-300 rounded-lg" required><option value="Rutin">Rutin</option><option value="CITO">CITO</option></select></div><div><label for="adminCourier" class="block text-sm font-medium text-gray-700 mb-1">Pilih Kurir</label><select id="adminCourier" class="w-full p-2 border border-gray-300 rounded-lg" required></select></div><div><label for="adminRegionalArea" class="block text-sm font-medium text-gray-700 mb-1">Area Regional</label><select id="adminRegionalArea" class="w-full p-2 border border-gray-300 rounded-lg" required><option>CANGGU</option><option>SEMINYAK</option><option>KUTA</option><option>DENPASAR</option><option>UBUD</option><option>PECATU</option><option>ULUWATU</option><option>LAINNYA</option></select></div><div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-2">Jenis Sampel</label><div id="adminSampleTypes" class="grid grid-cols-2 gap-2"><div><input type="checkbox" id="admin_darah" value="Darah" class="hidden sample-checkbox"><label for="admin_darah" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">🩸 Darah</label></div><div><input type="checkbox" id="admin_urine" value="Urine" class="hidden sample-checkbox"><label for="admin_urine" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💧 Urine</label></div><div><input type="checkbox" id="admin_feses" value="Feses" class="hidden sample-checkbox"><label for="admin_feses" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💩 Feses</label></div><div><input type="checkbox" id="admin_bhp" value="BHP" class="hidden sample-checkbox"><label for="admin_bhp" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">📦 BHP</label></div></div></div><div id="adminBhpDetailsDiv" class="hidden my-4 col-span-2"><label for="adminBhpDetails" class="block text-sm font-medium text-gray-700 mb-1">Rincian Kebutuhan BHP</label><textarea id="adminBhpDetails" rows="3" class="w-full p-2 border border-gray-300 rounded-lg"></textarea></div></div><p id="adminFormError" class="text-red-600 text-sm text-center col-span-2 mb-4"></p><div class="flex justify-end space-x-3 mt-4"><button type="button" onclick="closeModal('adminAddOrderModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Simpan</button></div></form></div></div>
+    <div id="adminAddOrderModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-lg p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Buat Orderan Baru (Admin)</h2><form id="adminAddOrderForm"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="col-span-2"><label for="adminClinicName" class="block text-sm font-medium text-gray-700 mb-1">Nama Faskes</label><input type="text" id="adminClinicName" list="clinic-list" class="w-full p-2 border border-gray-300 rounded-lg" required><datalist id="clinic-list"></datalist></div><div><label for="adminShift" class="block text-sm font-medium text-gray-700 mb-1">Shift</label><select id="adminShift" class="w-full p-2 border border-gray-300 rounded-lg" required><option value="Shift 1">Shift 1 (08.00 - 14.00 WITA)</option><option value="Shift 2">Shift 2 (14.00 - 21.00 WITA)</option></select></div><div><label for="adminOrderType" class="block text-sm font-medium text-gray-700 mb-1">Jenis Orderan</label><select id="adminOrderType" class="w-full p-2 border border-gray-300 rounded-lg" required><option value="Rutin">Rutin</option><option value="CITO">CITO</option></select></div><div><label for="adminCourier" class="block text-sm font-medium text-gray-700 mb-1">Pilih Kurir</label><select id="adminCourier" class="w-full p-2 border border-gray-300 rounded-lg"></select></div><div><label for="adminRegionalArea" class="block text-sm font-medium text-gray-700 mb-1">Area Regional</label><select id="adminRegionalArea" class="w-full p-2 border border-gray-300 rounded-lg" required><option>CANGGU</option><option>SEMINYAK</option><option>KUTA</option><option>DENPASAR</option><option>UBUD</option><option>PECATU</option><option>ULUWATU</option><option>LAINNYA</option></select></div><div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-2">Jenis Sampel</label><div id="adminSampleTypes" class="grid grid-cols-2 gap-2"><div><input type="checkbox" id="admin_darah" value="Darah" class="hidden sample-checkbox"><label for="admin_darah" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">🩸 Darah</label></div><div><input type="checkbox" id="admin_urine" value="Urine" class="hidden sample-checkbox"><label for="admin_urine" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💧 Urine</label></div><div><input type="checkbox" id="admin_feses" value="Feses" class="hidden sample-checkbox"><label for="admin_feses" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💩 Feses</label></div><div><input type="checkbox" id="admin_bhp" value="BHP" class="hidden sample-checkbox"><label for="admin_bhp" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">📦 BHP</label></div></div></div><div id="adminBhpDetailsDiv" class="hidden my-4 col-span-2"><label for="adminBhpDetails" class="block text-sm font-medium text-gray-700 mb-1">Rincian Kebutuhan BHP</label><textarea id="adminBhpDetails" rows="3" class="w-full p-2 border border-gray-300 rounded-lg"></textarea></div></div><p id="adminFormError" class="text-red-600 text-sm text-center col-span-2 mb-4"></p><div class="flex justify-end space-x-3 mt-4"><button type="button" onclick="closeModal('adminAddOrderModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Simpan</button></div></form></div></div>
     <div id="clientAddOrderModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Buat Permintaan Pickup</h2><p class="text-gray-500 mb-4">Order untuk: <span id="clientModalClinicName" class="font-bold"></span></p><form id="clientAddOrderForm"><div class="mb-4 col-span-2"><label class="block text-sm font-medium text-gray-700 mb-2">Pilih Jenis Sampel</label><div id="clientSampleTypes" class="grid grid-cols-2 gap-2"><div><input type="checkbox" id="client_darah" value="Darah" class="hidden sample-checkbox"><label for="client_darah" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">🩸 Darah</label></div><div><input type="checkbox" id="client_urine" value="Urine" class="hidden sample-checkbox"><label for="client_urine" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💧 Urine</label></div><div><input type="checkbox" id="client_feses" value="Feses" class="hidden sample-checkbox"><label for="client_feses" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💩 Feses</label></div><div><input type="checkbox" id="client_bhp" value="BHP" class="hidden sample-checkbox"><label for="client_bhp" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">📦 BHP</label></div></div></div><div id="clientBhpDetailsDiv" class="hidden my-4"><label for="clientBhpDetails" class="block text-sm font-medium text-gray-700 mb-1">Rincian Kebutuhan BHP</label><textarea id="clientBhpDetails" rows="3" class="w-full p-2 border border-gray-300 rounded-lg"></textarea></div><div class="mb-4"><label for="clientShift" class="block text-sm font-medium text-gray-700 mb-1">Shift</label><select id="clientShift" class="w-full p-2 border border-gray-300 rounded-lg" required><option value="Shift 1">Shift 1 (08.00 - 14.00 WITA)</option><option value="Shift 2">Shift 2 (14.00 - 21.00 WITA)</option></select></div><div class="mb-4"><label for="clientRegionalArea" class="block text-sm font-medium text-gray-700 mb-1">Area Regional</label><select id="clientRegionalArea" class="w-full p-2 border border-gray-300 rounded-lg" required><option>CANGGU</option><option>SEMINYAK</option><option>KUTA</option><option>DENPASAR</option><option>UBUD</option><option>PECATU</option><option>ULUWATU</option><option>LAINNYA</option></select></div><p id="clientFormError" class="text-red-600 text-sm text-center mb-4"></p><div class="flex justify-end space-x-3 mt-2"><button type="button" onclick="closeModal('clientAddOrderModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Kirim</button></div></form></div></div>
     <div id="issueModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Laporkan Kendala</h2><form id="issueForm"><input type="hidden" id="issueOrderId"><div class="mb-4"><label for="issueDescription" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label><textarea id="issueDescription" rows="4" class="w-full p-2 border border-gray-300 rounded-lg" required></textarea></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('issueModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700">Kirim</button></div></form></div></div>
     <div id="verificationModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Verifikasi Sampel</h2><form id="verificationForm"><input type="hidden" id="verificationOrderId"><div class="mb-4"><label for="sampleCount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Sampel</label><input type="number" id="sampleCount" class="w-full p-2 border border-gray-300 rounded-lg" required></div><div class="mb-4"><label for="verificationNotes" class="block text-sm font-medium text-gray-700 mb-1">Catatan</label><textarea id="verificationNotes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg"></textarea></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('verificationModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700">Konfirmasi</button></div></form></div></div>
@@ -129,12 +139,12 @@
             superusers: ['pekaktemplar@gmail.com'],
             admins: ['admin.lab.bali@example.com'],
             couriers: {
-                'imadesuwartawan74@gmail.com': 'Made',
-                'verdiansyah.212@gmail.com': 'Firza',
-                'harinanang94@gmail.com': 'Nanang',
-                'krisnawahyudi23@gmail.com': 'Krisna'
+                'aryatiniputu@gmail.com': 'Made',
+                'firza.kurir@example.com': 'Firza',
+                'nanang.kurir@example.com': 'Nanang',
+                'krisna.kurir@example.com': 'Krisna'
             },
-            analysts: ['fhclab1@gmail.com'],
+            analysts: ['aryati.suryaningsih@gmail.com'],
             clients: {
                 'agusbudiarthalg@gmail.com': 1,
                 'klinik.sejahtera@example.com': 2
@@ -159,6 +169,7 @@
         let localCouriers = [];
         let unsubscribeOrders = null;
         let unsubscribeCouriers = null;
+        let isDevMode = false;
 
         // --- FUNGSI SINKRONISASI KURIR ---
         async function syncCouriersWithDatabase() {
@@ -207,11 +218,46 @@
             document.getElementById('loadingSpinner').classList.add('hidden');
         }
 
+        function setupDevLogin() {
+            isDevMode = true;
+            document.getElementById('loginWithGoogleBtn').classList.add('hidden');
+            document.getElementById('devLogin').classList.remove('hidden');
+            const allUsers = [];
+            ACCESS_CONFIG.superusers.forEach(email => allUsers.push({ email, name: `(Superuser) ${email.split('@')[0]}` }));
+            ACCESS_CONFIG.admins.forEach(email => allUsers.push({ email, name: `(Admin) ${email.split('@')[0]}` }));
+            Object.entries(ACCESS_CONFIG.couriers).forEach(([email, name]) => allUsers.push({ email, name: `(Kurir) ${name}` }));
+            ACCESS_CONFIG.analysts.forEach(email => allUsers.push({ email, name: `(Analis) ${email.split('@')[0]}` }));
+            Object.entries(ACCESS_CONFIG.clients).forEach(([email, clinicId]) => {
+                const clinic = clinics.find(c => c.id === clinicId);
+                allUsers.push({ email, name: `(Client) ${clinic ? clinic.name : email}` });
+            });
+            const select = document.getElementById('devUserSelect');
+            select.innerHTML = '';
+            allUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.email;
+                option.textContent = user.name;
+                select.appendChild(option);
+            });
+        }
+
+        function handleDevLogin() {
+            const selectedEmail = document.getElementById('devUserSelect').value;
+            if (selectedEmail) {
+                const fakeUser = { email: selectedEmail, displayName: 'Pengguna Dev' };
+                authorizeUser(fakeUser);
+            }
+        }
+
         function handleGoogleLogin() {
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider).catch(error => {
                 console.error("Login Gagal:", error);
-                document.getElementById('loginError').textContent = 'Gagal login. Coba lagi.';
+                if (error.code === 'auth/unauthorized-domain') {
+                    setupDevLogin();
+                } else {
+                    document.getElementById('loginError').textContent = 'Gagal login. Coba lagi.';
+                }
                 document.getElementById('loadingSpinner').classList.add('hidden');
             });
         }
@@ -219,11 +265,18 @@
         function logout() {
             if (unsubscribeOrders) unsubscribeOrders();
             if (unsubscribeCouriers) unsubscribeCouriers();
-            signOut(auth);
+            if (isDevMode) {
+                window.location.reload();
+            } else {
+                signOut(auth);
+            }
         }
 
         onAuthStateChanged(auth, (user) => {
-            if (user) { authorizeUser(user); } 
+            if (user) { 
+                isDevMode = false;
+                authorizeUser(user);
+            } 
             else {
                 currentUser = { role: null, name: null, clinicId: null, email: null };
                 document.getElementById('mainAppContainer').classList.add('hidden');
@@ -274,7 +327,7 @@
                 clinicId: clinics.find(c => c.name.toLowerCase() === document.getElementById('adminClinicName').value.toLowerCase())?.id || null,
                 shift: document.getElementById('adminShift').value,
                 orderType: document.getElementById('adminOrderType').value,
-                courier: document.getElementById('adminCourier').value,
+                courier: document.getElementById('adminCourier').value || null,
                 regionalArea: document.getElementById('adminRegionalArea').value,
                 status: 'Baru',
                 sampleTypes: sampleTypes,
@@ -422,7 +475,7 @@
             if (!localCouriers.length || !localOrders.length) return;
             
             const latestOrder = [...localOrders].sort((a, b) => new Date(b.timestamps.ordered) - new Date(a.timestamps.ordered))[0];
-            const currentActiveShift = latestOrder.shift;
+            const currentActiveShift = latestOrder ? latestOrder.shift : 'Shift 1';
 
             for (const courier of localCouriers) {
                 const hasActiveTask = localOrders.some(o => o.shift === currentActiveShift && o.courier === courier.name && !['Selesai', 'Terverifikasi', 'Dibatalkan'].includes(o.status));
@@ -543,15 +596,22 @@
             document.getElementById('activeShiftDisplay').textContent = currentActiveShift;
 
             let baseOrders;
-            if (currentUser.role === 'kurir') {
-                baseOrders = localOrders.filter(o => (o.status === 'Baru' && !o.courier) || o.courier === currentUser.name);
-            } else if (currentUser.role === 'client') {
+            // UPDATE: Kurir now sees the same as admin
+            if (currentUser.role === 'client') {
                 baseOrders = localOrders.filter(o => o.clinicId === currentUser.clinicId);
-            } else if (['admin', 'superuser', 'analis'].includes(currentUser.role)) {
+            } else { // admin, superuser, analis, kurir
                 baseOrders = localOrders;
             }
 
             let ordersForCurrentShift = baseOrders.filter(o => o.shift === currentActiveShift);
+            
+            // Admin/Superuser can use the courier filter
+            if (['admin', 'superuser'].includes(currentUser.role)) {
+                const selectedCourier = document.getElementById('courierFilter').value;
+                if (selectedCourier !== 'semua') {
+                    ordersForCurrentShift = ordersForCurrentShift.filter(o => o.courier === selectedCourier);
+                }
+            }
             
             let ordersToDisplay = ordersForCurrentShift;
             const showCompleted = document.getElementById('showCompletedToggle').checked;
@@ -576,23 +636,22 @@
                 return dateB - dateA;
             });
 
-
             ordersToDisplay.forEach(order => {
                 const statusInfo = getStatusInfo(order.status);
                 let actionButtons = '';
                 const { role, name } = currentUser;
 
-                if((role === 'admin' || role === 'superuser') && !order.courier && order.status === 'Baru') {
+                if ((role === 'admin' || role === 'superuser') && !order.courier && order.status === 'Baru') {
                     actionButtons += `<button onclick="openModal('assignCourierModal', '${order.id}')" class="bg-gray-700 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-gray-800 transition">Tugaskan</button>`;
                 } else if (role === 'kurir' && !order.courier && order.status === 'Baru') {
                     actionButtons += `<button onclick="selfAssign('${order.id}')" class="bg-green-600 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-700 transition">Ambil Tugas</button>`;
-                } else if(role === 'kurir' && order.courier === name) {
-                    if (order.status === 'Menuju Faskes') actionButtons += `<button onclick="updateStatus('${order.id}', 'Di Faskes')" class="bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-indigo-600 transition">Tiba</button>`;
-                    if (order.status === 'Di Faskes') actionButtons += `<button onclick="updateStatus('${order.id}', 'Kembali ke Lab')" class="bg-yellow-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-yellow-600 transition">Kembali</button>`;
-                    if (order.status === 'Kembali ke Lab') actionButtons += `<button onclick="updateStatus('${order.id}', 'Selesai')" class="bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-600 transition">Sampai</button>`;
+                } else if (role === 'kurir' && order.courier === name) {
+                    if (order.status === 'Menuju Faskes') actionButtons += `<button onclick="updateStatus('${order.id}', 'Di Faskes')" class="bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-indigo-600 transition">Tiba di Lokasi</button>`;
+                    if (order.status === 'Di Faskes') actionButtons += `<button onclick="updateStatus('${order.id}', 'Kembali ke Lab')" class="bg-yellow-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-yellow-600 transition">Kembali ke Lab</button>`;
+                    if (order.status === 'Kembali ke Lab') actionButtons += `<button onclick="updateStatus('${order.id}', 'Selesai')" class="bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-600 transition">Selesai di Lab</button>`;
                     if (order.status === 'Kendala') actionButtons += `<button onclick="updateStatus('${order.id}', 'Kembali ke Lab')" class="bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-600 transition">Lanjutkan</button>`;
                     if (!['Selesai', 'Terverifikasi', 'Dibatalkan'].includes(order.status)) actionButtons += `<button onclick="openModal('issueModal', '${order.id}')" class="bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-red-600 transition">Kendala</button>`;
-                } else if(role === 'analis' && order.status === 'Selesai') {
+                } else if (role === 'analis' && order.status === 'Selesai') {
                     actionButtons += `<button onclick="openModal('verificationModal', '${order.id}')" class="bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-indigo-600 transition">Verifikasi</button>`;
                 } else if (role === 'client' && order.status === 'Baru') {
                     actionButtons += `<button onclick="cancelOrder('${order.id}')" class="bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-red-600 transition">Batalkan</button>`;
@@ -645,7 +704,7 @@
             
             const allCourierNames = localCouriers.map(c => c.name).sort();
             
-            adminCourierSelector.innerHTML = '';
+            adminCourierSelector.innerHTML = '<option value="">Broadcast ke Semua Kurir</option>';
             allCourierNames.forEach(name => adminCourierSelector.innerHTML += `<option value="${name}">${name}</option>`);
 
             courierFilter.innerHTML = '<option value="semua">Semua Kurir</option>';
@@ -679,6 +738,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('loginWithGoogleBtn').addEventListener('click', handleGoogleLogin);
+            document.getElementById('devLoginBtn').addEventListener('click', handleDevLogin);
             document.getElementById('adminAddOrderForm').addEventListener('submit', adminAddOrder);
             document.getElementById('clientAddOrderForm').addEventListener('submit', clientAddOrder);
             document.getElementById('assignCourierForm').addEventListener('submit', assignCourier);
@@ -695,6 +755,4 @@
     </script>
 </body>
 </html>
-
-
 
