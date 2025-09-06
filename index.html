@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pelacakan Pengambilan Sampel - Fullerton Health</title>
+    <title>Aplikasi Layanan Order Lab - Fullerton Health</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,6 +19,7 @@
         .status-kendala { background-color: #fee2e2; color: #991b1b; }
         .status-selesai { background-color: #dcfce7; color: #166534; }
         .status-verifikasi { background-color: #e0e7ff; color: #3730a3; }
+        .status-dibatalkan { background-color: #e5e7eb; color: #4b5563; } /* Status baru */
         .courier-status-tersedia { border-color: #22c55e; }
         .courier-status-istirahat { border-color: #f59e0b; }
         .courier-status-tugas { border-color: #3b82f6; }
@@ -386,6 +387,26 @@
                 event.target.reset();
             } catch (e) { console.error("Error: ", e); }
         }
+        
+        async function selfAssign(orderId) {
+            if (!currentUser || currentUser.role !== 'kurir') return;
+            const orderRef = doc(db, "orders", orderId);
+            try {
+                await updateDoc(orderRef, {
+                    courier: currentUser.name,
+                    status: 'Menuju Faskes',
+                    'timestamps.enrouteToFacility': new Date().toISOString()
+                });
+            } catch (e) { console.error("Gagal mengambil tugas: ", e); }
+        }
+
+        async function cancelOrder(orderId) {
+            if (!currentUser || currentUser.role !== 'client') return;
+            const orderRef = doc(db, "orders", orderId);
+            try {
+                await updateDoc(orderRef, { status: 'Dibatalkan' });
+            } catch (e) { console.error("Gagal membatalkan order: ", e); }
+        }
 
         async function toggleBreak(courierName) {
             const courier = localCouriers.find(c => c.name === courierName);
@@ -404,7 +425,7 @@
             const currentActiveShift = latestOrder.shift;
 
             for (const courier of localCouriers) {
-                const hasActiveTask = localOrders.some(o => o.shift === currentActiveShift && o.courier === courier.name && !['Selesai', 'Terverifikasi'].includes(o.status));
+                const hasActiveTask = localOrders.some(o => o.shift === currentActiveShift && o.courier === courier.name && !['Selesai', 'Terverifikasi', 'Dibatalkan'].includes(o.status));
                 const newStatus = hasActiveTask ? 'Menjalankan Tugas' : 'Tersedia';
                 if (courier.status !== 'Istirahat' && courier.status !== newStatus) {
                     const courierRef = doc(db, "couriers", courier.id);
@@ -424,6 +445,7 @@
                 case 'Kendala': return { class: 'status-kendala', icon: 'fa-solid fa-triangle-exclamation' };
                 case 'Selesai': return { class: 'status-selesai', icon: 'fa-solid fa-check-circle' };
                 case 'Terverifikasi': return { class: 'status-verifikasi', icon: 'fa-solid fa-user-check'};
+                case 'Dibatalkan': return { class: 'status-dibatalkan', icon: 'fa-solid fa-ban'};
                 default: return { class: 'bg-gray-200 text-gray-800', icon: 'fa-solid fa-question-circle' };
             }
         }
@@ -512,14 +534,17 @@
             
             let currentActiveShift = 'Shift 1';
             if (localOrders.length > 0) {
-                const latestOrder = [...localOrders].sort((a, b) => new Date(b.timestamps.ordered) - new Date(a.timestamps.ordered))[0];
-                currentActiveShift = latestOrder.shift;
+                const orderedOrders = localOrders.filter(o => o.timestamps && o.timestamps.ordered);
+                if (orderedOrders.length > 0) {
+                    const latestOrder = [...orderedOrders].sort((a, b) => new Date(b.timestamps.ordered) - new Date(a.timestamps.ordered))[0];
+                    currentActiveShift = latestOrder.shift;
+                }
             }
             document.getElementById('activeShiftDisplay').textContent = currentActiveShift;
 
             let baseOrders;
             if (currentUser.role === 'kurir') {
-                baseOrders = localOrders.filter(o => o.courier === currentUser.name);
+                baseOrders = localOrders.filter(o => (o.status === 'Baru' && !o.courier) || o.courier === currentUser.name);
             } else if (currentUser.role === 'client') {
                 baseOrders = localOrders.filter(o => o.clinicId === currentUser.clinicId);
             } else if (['admin', 'superuser', 'analis'].includes(currentUser.role)) {
@@ -533,11 +558,9 @@
 
             if (!showCompleted) {
                 if (currentUser.role === 'analis') {
-                    // Hide only fully verified orders, so they can still see 'Selesai' orders to work on.
-                    ordersToDisplay = ordersToDisplay.filter(o => o.status !== 'Terverifikasi');
+                    ordersToDisplay = ordersToDisplay.filter(o => !['Terverifikasi', 'Dibatalkan'].includes(o.status));
                 } else {
-                    // For all other roles, hide both Selesai and Terverifikasi.
-                    ordersToDisplay = ordersToDisplay.filter(o => !['Selesai', 'Terverifikasi'].includes(o.status));
+                    ordersToDisplay = ordersToDisplay.filter(o => !['Selesai', 'Terverifikasi', 'Dibatalkan'].includes(o.status));
                 }
             }
             
@@ -547,24 +570,32 @@
                 return;
             }
 
-            ordersToDisplay.sort((a, b) => new Date(b.timestamps.ordered) - new Date(a.timestamps.ordered));
+            ordersToDisplay.sort((a, b) => {
+                const dateA = a.timestamps && a.timestamps.ordered ? new Date(a.timestamps.ordered) : 0;
+                const dateB = b.timestamps && b.timestamps.ordered ? new Date(b.timestamps.ordered) : 0;
+                return dateB - dateA;
+            });
+
 
             ordersToDisplay.forEach(order => {
                 const statusInfo = getStatusInfo(order.status);
                 let actionButtons = '';
                 const { role, name } = currentUser;
 
-                if((role === 'admin' || role === 'superuser') && !order.courier) {
+                if((role === 'admin' || role === 'superuser') && !order.courier && order.status === 'Baru') {
                     actionButtons += `<button onclick="openModal('assignCourierModal', '${order.id}')" class="bg-gray-700 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-gray-800 transition">Tugaskan</button>`;
+                } else if (role === 'kurir' && !order.courier && order.status === 'Baru') {
+                    actionButtons += `<button onclick="selfAssign('${order.id}')" class="bg-green-600 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-700 transition">Ambil Tugas</button>`;
                 } else if(role === 'kurir' && order.courier === name) {
-                    if (order.status === 'Baru') actionButtons += `<button onclick="updateStatus('${order.id}', 'Menuju Faskes')" class="bg-blue-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-blue-600 transition">Menuju Faskes</button>`;
                     if (order.status === 'Menuju Faskes') actionButtons += `<button onclick="updateStatus('${order.id}', 'Di Faskes')" class="bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-indigo-600 transition">Tiba</button>`;
                     if (order.status === 'Di Faskes') actionButtons += `<button onclick="updateStatus('${order.id}', 'Kembali ke Lab')" class="bg-yellow-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-yellow-600 transition">Kembali</button>`;
                     if (order.status === 'Kembali ke Lab') actionButtons += `<button onclick="updateStatus('${order.id}', 'Selesai')" class="bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-600 transition">Sampai</button>`;
                     if (order.status === 'Kendala') actionButtons += `<button onclick="updateStatus('${order.id}', 'Kembali ke Lab')" class="bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-600 transition">Lanjutkan</button>`;
-                    if (!['Baru', 'Selesai', 'Terverifikasi'].includes(order.status)) actionButtons += `<button onclick="openModal('issueModal', '${order.id}')" class="bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-red-600 transition">Kendala</button>`;
+                    if (!['Selesai', 'Terverifikasi', 'Dibatalkan'].includes(order.status)) actionButtons += `<button onclick="openModal('issueModal', '${order.id}')" class="bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-red-600 transition">Kendala</button>`;
                 } else if(role === 'analis' && order.status === 'Selesai') {
                     actionButtons += `<button onclick="openModal('verificationModal', '${order.id}')" class="bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-indigo-600 transition">Verifikasi</button>`;
+                } else if (role === 'client' && order.status === 'Baru') {
+                    actionButtons += `<button onclick="cancelOrder('${order.id}')" class="bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-red-600 transition">Batalkan</button>`;
                 }
 
                 let bhpDetailsHTML = order.bhpDetails ? `<div class="mt-2 pt-2 border-t border-gray-100"><p class="font-semibold text-gray-500 text-xs uppercase mb-1">Rincian BHP</p><p class="text-sm text-gray-600 bg-gray-50 p-2 rounded-md whitespace-pre-wrap">${order.bhpDetails}</p></div>` : '';
@@ -643,6 +674,8 @@
         window.updateStatus = updateStatus;
         window.openModal = openModal;
         window.closeModal = closeModal;
+        window.selfAssign = selfAssign;
+        window.cancelOrder = cancelOrder;
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('loginWithGoogleBtn').addEventListener('click', handleGoogleLogin);
