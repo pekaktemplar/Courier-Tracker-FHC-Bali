@@ -558,7 +558,11 @@
         function renderCourierStatus() {
             const list = document.getElementById('courierStatusList');
             list.innerHTML = '';
-            const couriersToRender = currentUser.role === 'kurir' ? localCouriers.filter(c => c.name === currentUser.name) : localCouriers;
+            
+            // FIX: Ensure the list of couriers is unique by name to prevent rendering duplicates.
+            const uniqueCouriersByName = Array.from(new Map(localCouriers.map(c => [c.name, c])).values());
+
+            const couriersToRender = currentUser.role === 'kurir' ? uniqueCouriersByName.filter(c => c.name === currentUser.name) : uniqueCouriersByName;
             couriersToRender.sort((a, b) => a.name.localeCompare(b.name)); 
             
             couriersToRender.forEach(courier => {
@@ -755,4 +759,5 @@
     </script>
 </body>
 </html>
+
 
