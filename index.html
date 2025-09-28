@@ -8,40 +8,92 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .modal { transition: opacity 0.25s ease; }
-        .modal-active { overflow: hidden; }
-        .modal-content { transition: transform 0.25s ease; }
-        .status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 500; font-size: 0.8rem; white-space: nowrap; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #fefdfc; /* Off-White */
+        }
+        
+        /* Tema Warna Kustom */
+        :root {
+            --color-primary: #154887; /* Dark Blue */
+            --color-primary-dark: #194e91;
+            --color-secondary: #32629d; /* Medium Blue */
+            --color-accent-red: #ee2228;
+            --color-accent-gold: #b39058;
+            --color-accent-gold-dark: #b68103;
+            --color-bg-light: #eaf1ed; /* Light Greenish White */
+            --color-bg-cream: #e9d9b0;
+        }
+
+        /* Animasi & Transisi Halus */
+        .btn {
+            transition: all 0.3s ease-in-out;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .btn:active {
+            transform: translateY(0px) scale(0.98);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .card {
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        }
+        .modal-content {
+             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .modal.hidden .modal-content {
+            transform: translateY(-50px) scale(0.95);
+            opacity: 0;
+        }
+
+        /* Styling Komponen */
+        .status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; white-space: nowrap; }
         .status-baru { background-color: #e0f2fe; color: #0c4a6e; }
         .status-pickup { background-color: #fef9c3; color: #854d0e; }
-        .status-lanjut { background-color: #fef3c7; color: #b45309; }
         .status-kendala { background-color: #fee2e2; color: #991b1b; }
         .status-selesai { background-color: #dcfce7; color: #166534; }
         .status-verifikasi { background-color: #e0e7ff; color: #3730a3; }
         .status-dibatalkan { background-color: #e5e7eb; color: #4b5563; }
+        
         .courier-status-tersedia { border-color: #22c55e; }
         .courier-status-istirahat { border-color: #f59e0b; }
         .courier-status-tugas { border-color: #3b82f6; }
-        .sample-checkbox:checked + label { background-color: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+        .sample-checkbox:checked + label { 
+            background-color: var(--color-bg-light); 
+            border-color: var(--color-secondary); 
+            color: var(--color-primary); 
+            font-weight: 600;
+        }
+        
+        .card-cito {
+            background: linear-gradient(135deg, white, var(--color-bg-cream));
+            border-left: 4px solid var(--color-accent-gold-dark);
+        }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="text-gray-800">
 
     <!-- Loading Spinner -->
     <div id="loadingSpinner" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
-        <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+        <i class="fas fa-spinner fa-spin text-4xl" style="color: var(--color-primary);"></i>
         <p class="mt-4 text-gray-600">Memuat Aplikasi...</p>
     </div>
 
     <!-- Login Screen -->
-    <div id="loginContainer" class="hidden min-h-screen flex items-center justify-center bg-gray-50">
-        <div class="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-lg text-center">
+    <div id="loginContainer" class="hidden min-h-screen flex items-center justify-center" style="background-color: var(--color-bg-light);">
+        <div class="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-2xl text-center">
             <div>
-                <h1 class="text-3xl font-bold text-center text-gray-900">Selamat Datang</h1>
-                <p class="text-center text-gray-500">Sistem Pelacakan Sampel Fullerton Health</p>
+                <h1 class="text-3xl font-bold text-center" style="color: var(--color-primary);">Selamat Datang</h1>
+                <p class="text-center text-gray-500">Sistem Layanan Laboratorium Fullerton Health</p>
             </div>
-            <button id="loginWithGoogleBtn" class="w-full flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+            <button id="loginWithGoogleBtn" class="w-full flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                 <img class="w-5 h-5 mr-2" src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo">
                 Masuk dengan Google
             </button>
@@ -54,45 +106,45 @@
         <!-- Header -->
         <header class="mb-6 flex flex-col md:flex-row justify-between items-center">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">Dashboard Pelacakan</h1>
+                <h1 class="text-3xl font-bold" style="color: var(--color-primary);">Dashboard Layanan Lab</h1>
                 <p class="text-gray-500">Login sebagai: <span id="roleDisplay" class="font-semibold"></span></p>
             </div>
             <div class="mt-4 md:mt-0 flex flex-wrap items-center justify-center md:justify-end gap-3">
                  <div id="exportDateFilter" class="hidden w-full md:w-auto flex-wrap items-center justify-center gap-2 bg-white p-2 rounded-lg shadow-sm">
-                     <input type="date" id="startDate" class="p-1 border border-gray-200 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 flex-grow">
+                     <input type="date" id="startDate" class="p-1 border border-gray-200 rounded-md text-sm focus:ring-2" style="--tw-ring-color: var(--color-secondary);">
                      <span class="text-gray-500 text-sm">s/d</span>
-                     <input type="date" id="endDate" class="p-1 border border-gray-200 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 flex-grow">
+                     <input type="date" id="endDate" class="p-1 border border-gray-200 rounded-md text-sm focus:ring-2" style="--tw-ring-color: var(--color-secondary);">
                  </div>
-                 <button id="exportBtn" onclick="exportToCsv()" class="hidden bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition duration-300 flex items-center">
+                 <button id="exportBtn" onclick="exportToCsv()" class="btn hidden bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md flex items-center">
                     <i class="fas fa-file-excel mr-2"></i> Ekspor
                  </button>
-                 <button id="addOrderBtn" onclick="openModalForRole()" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 flex items-center">
+                 <button id="addOrderBtn" onclick="openModalForRole()" class="btn text-white font-semibold py-2 px-4 rounded-lg shadow-md flex items-center" style="background-color: var(--color-primary); --tw-shadow-color: var(--color-primary);" onmouseover="this.style.backgroundColor='var(--color-primary-dark)'" onmouseout="this.style.backgroundColor='var(--color-primary)'">
                     <i class="fas fa-plus mr-2"></i> Buat Orderan
                 </button>
-                 <button onclick="logout()" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-600 transition duration-300 flex items-center">
+                 <button onclick="logout()" class="btn text-white font-semibold py-2 px-4 rounded-lg shadow-md flex items-center" style="background-color: var(--color-accent-red); --tw-shadow-color: var(--color-accent-red);">
                     <i class="fas fa-sign-out-alt mr-2"></i> Keluar
                 </button>
             </div>
         </header>
         
         <!-- Status Kurir -->
-        <div id="courierStatusPanel" class="mb-6 p-4 bg-white rounded-xl shadow">
-             <h3 class="font-bold text-lg mb-3">Status Kurir - <span id="activeShiftDisplay" class="text-blue-600 font-semibold"></span></h3>
+        <div id="courierStatusPanel" class="mb-6 p-4 bg-white rounded-xl shadow-lg">
+             <h3 class="font-bold text-lg mb-3" style="color: var(--color-primary);">Status Kurir - <span id="activeShiftDisplay" class="font-semibold" style="color: var(--color-secondary);"></span></h3>
              <div id="courierStatusList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"></div>
         </div>
 
         <!-- Filter -->
-        <div id="filterPanel" class="mb-6 p-4 bg-white rounded-xl shadow">
+        <div id="filterPanel" class="mb-6 p-4 bg-white rounded-xl shadow-lg">
             <div class="flex flex-col md:flex-row md:items-center justify-between">
                 <div id="courierFilterDiv" class="flex items-center space-x-4">
                     <label for="courierFilter" class="font-semibold mb-2 md:mb-0">Filter Kurir:</label>
-                    <select id="courierFilter" onchange="renderOrders()" class="w-full md:w-auto p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select id="courierFilter" onchange="renderOrders()" class="w-full md:w-auto p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);">
                         <option value="semua">Semua Kurir</option>
                     </select>
                 </div>
                 <div id="showCompletedDiv" class="mt-4 md:mt-0">
                     <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" id="showCompletedToggle" onchange="renderOrders()" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <input type="checkbox" id="showCompletedToggle" onchange="renderOrders()" class="h-4 w-4 rounded border-gray-300 focus:ring-2" style="color: var(--color-secondary); --tw-ring-color: var(--color-secondary);">
                         <span class="text-sm font-medium text-gray-700">Tampilkan Order Selesai</span>
                     </label>
                 </div>
@@ -104,11 +156,11 @@
     </div>
 
     <!-- Modals -->
-    <div id="adminAddOrderModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-lg p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Buat Orderan Baru (Admin)</h2><form id="adminAddOrderForm"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="col-span-2"><label for="adminClinicName" class="block text-sm font-medium text-gray-700 mb-1">Nama Faskes</label><input type="text" id="adminClinicName" list="clinic-list" class="w-full p-2 border border-gray-300 rounded-lg" required><datalist id="clinic-list"></datalist></div><div><label for="adminShift" class="block text-sm font-medium text-gray-700 mb-1">Shift</label><select id="adminShift" class="w-full p-2 border border-gray-300 rounded-lg" required><option value="Shift 1">Shift 1 (08.00 - 14.00 WITA)</option><option value="Shift 2">Shift 2 (14.00 - 21.00 WITA)</option></select></div><div><label for="adminOrderType" class="block text-sm font-medium text-gray-700 mb-1">Jenis Orderan</label><select id="adminOrderType" class="w-full p-2 border border-gray-300 rounded-lg" required><option value="Rutin">Rutin</option><option value="CITO">CITO</option></select></div><div><label for="adminCourier" class="block text-sm font-medium text-gray-700 mb-1">Pilih Kurir</label><select id="adminCourier" class="w-full p-2 border border-gray-300 rounded-lg"></select></div><div><label for="adminRegionalArea" class="block text-sm font-medium text-gray-700 mb-1">Area Regional</label><select id="adminRegionalArea" class="w-full p-2 border border-gray-300 rounded-lg" required><option>CANGGU</option><option>SEMINYAK</option><option>KUTA</option><option>DENPASAR</option><option>UBUD</option><option>PECATU</option><option>ULUWATU</option><option>LAINNYA</option></select></div><div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-2">Jenis Sampel</label><div id="adminSampleTypes" class="grid grid-cols-2 gap-2"><div><input type="checkbox" id="admin_darah" value="Darah" class="hidden sample-checkbox"><label for="admin_darah" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">🩸 Darah</label></div><div><input type="checkbox" id="admin_urine" value="Urine" class="hidden sample-checkbox"><label for="admin_urine" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💧 Urine</label></div><div><input type="checkbox" id="admin_feses" value="Feses" class="hidden sample-checkbox"><label for="admin_feses" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💩 Feses</label></div><div><input type="checkbox" id="admin_bhp" value="BHP" class="hidden sample-checkbox"><label for="admin_bhp" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">📦 BHP</label></div></div></div><div id="adminBhpDetailsDiv" class="hidden my-4 col-span-2"><label for="adminBhpDetails" class="block text-sm font-medium text-gray-700 mb-1">Rincian Kebutuhan BHP</label><textarea id="adminBhpDetails" rows="3" class="w-full p-2 border border-gray-300 rounded-lg"></textarea></div></div><p id="adminFormError" class="text-red-600 text-sm text-center col-span-2 mb-4"></p><div class="flex justify-end space-x-3 mt-4"><button type="button" onclick="closeModal('adminAddOrderModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Simpan</button></div></form></div></div>
-    <div id="clientAddOrderModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Buat Permintaan Pickup</h2><p class="text-gray-500 mb-4">Order untuk: <span id="clientModalClinicName" class="font-bold"></span></p><form id="clientAddOrderForm"><div class="mb-4 col-span-2"><label class="block text-sm font-medium text-gray-700 mb-2">Pilih Jenis Sampel</label><div id="clientSampleTypes" class="grid grid-cols-2 gap-2"><div><input type="checkbox" id="client_darah" value="Darah" class="hidden sample-checkbox"><label for="client_darah" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">🩸 Darah</label></div><div><input type="checkbox" id="client_urine" value="Urine" class="hidden sample-checkbox"><label for="client_urine" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💧 Urine</label></div><div><input type="checkbox" id="client_feses" value="Feses" class="hidden sample-checkbox"><label for="client_feses" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">💩 Feses</label></div><div><input type="checkbox" id="client_bhp" value="BHP" class="hidden sample-checkbox"><label for="client_bhp" class="block border rounded-md p-3 text-center cursor-pointer transition-colors">📦 BHP</label></div></div></div><div id="clientBhpDetailsDiv" class="hidden my-4"><label for="clientBhpDetails" class="block text-sm font-medium text-gray-700 mb-1">Rincian Kebutuhan BHP</label><textarea id="clientBhpDetails" rows="3" class="w-full p-2 border border-gray-300 rounded-lg"></textarea></div><div class="mb-4"><label for="clientShift" class="block text-sm font-medium text-gray-700 mb-1">Shift</label><select id="clientShift" class="w-full p-2 border border-gray-300 rounded-lg" required><option value="Shift 1">Shift 1 (08.00 - 14.00 WITA)</option><option value="Shift 2">Shift 2 (14.00 - 21.00 WITA)</option></select></div><div class="mb-4"><label for="clientRegionalArea" class="block text-sm font-medium text-gray-700 mb-1">Area Regional</label><select id="clientRegionalArea" class="w-full p-2 border border-gray-300 rounded-lg" required><option>CANGGU</option><option>SEMINYAK</option><option>KUTA</option><option>DENPASAR</option><option>UBUD</option><option>PECATU</option><option>ULUWATU</option><option>LAINNYA</option></select></div><p id="clientFormError" class="text-red-600 text-sm text-center mb-4"></p><div class="flex justify-end space-x-3 mt-2"><button type="button" onclick="closeModal('clientAddOrderModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Kirim</button></div></form></div></div>
-    <div id="issueModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Laporkan Kendala</h2><form id="issueForm"><input type="hidden" id="issueOrderId"><div class="mb-4"><label for="issueDescription" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label><textarea id="issueDescription" rows="4" class="w-full p-2 border border-gray-300 rounded-lg" required></textarea></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('issueModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700">Kirim</button></div></form></div></div>
-    <div id="verificationModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Verifikasi Sampel</h2><form id="verificationForm"><input type="hidden" id="verificationOrderId"><div class="mb-4"><label for="sampleCount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Sampel</label><input type="number" id="sampleCount" class="w-full p-2 border border-gray-300 rounded-lg" required></div><div class="mb-4"><label for="verificationNotes" class="block text-sm font-medium text-gray-700 mb-1">Catatan</label><textarea id="verificationNotes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg"></textarea></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('verificationModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700">Konfirmasi</button></div></form></div></div>
-    <div id="assignCourierModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"><div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl transform scale-95"><h2 class="text-2xl font-bold mb-4">Tugaskan Kurir</h2><form id="assignCourierForm"><input type="hidden" id="assignOrderId"><div class="mb-4"><label for="assignCourierSelector" class="block text-sm font-medium text-gray-700 mb-1">Pilih Kurir</label><select id="assignCourierSelector" class="w-full p-2 border border-gray-300 rounded-lg" required></select></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('assignCourierModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Batal</button><button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Tugaskan</button></div></form></div></div>
+    <div id="adminAddOrderModal" class="modal fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden opacity-0"><div class="modal-content bg-white w-full max-w-lg p-6 rounded-xl shadow-2xl transform scale-95 opacity-0"><h2 class="text-2xl font-bold mb-4" style="color: var(--color-primary);">Buat Orderan Baru</h2><form id="adminAddOrderForm"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="col-span-2"><label for="adminClinicName" class="block text-sm font-medium text-gray-700 mb-1">Nama Faskes</label><input type="text" id="adminClinicName" list="clinic-list" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);" required><datalist id="clinic-list"></datalist></div><div><label for="adminShift" class="block text-sm font-medium text-gray-700 mb-1">Shift</label><select id="adminShift" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);" required><option value="Shift 1">Shift 1 (08.00 - 14.00 WITA)</option><option value="Shift 2">Shift 2 (14.00 - 21.00 WITA)</option></select></div><div><label for="adminOrderType" class="block text-sm font-medium text-gray-700 mb-1">Jenis Orderan</label><select id="adminOrderType" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);" required><option value="Rutin">Rutin</option><option value="CITO">CITO</option></select></div><div><label for="adminCourier" class="block text-sm font-medium text-gray-700 mb-1">Pilih Kurir</label><select id="adminCourier" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);"></select></div><div><label for="adminRegionalArea" class="block text-sm font-medium text-gray-700 mb-1">Area Regional</label><select id="adminRegionalArea" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);" required><option>CANGGU</option><option>SEMINYAK</option><option>KUTA</option><option>DENPASAR</option><option>UBUD</option><option>PECATU</option><option>ULUWATU</option><option>LAINNYA</option></select></div><div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-2">Jenis Sampel</label><div id="adminSampleTypes" class="grid grid-cols-2 gap-2"><div><input type="checkbox" id="admin_darah" value="Darah" class="hidden sample-checkbox"><label for="admin_darah" class="block border rounded-md p-3 text-center cursor-pointer transition-all">🩸 Darah</label></div><div><input type="checkbox" id="admin_urine" value="Urine" class="hidden sample-checkbox"><label for="admin_urine" class="block border rounded-md p-3 text-center cursor-pointer transition-all">💧 Urine</label></div><div><input type="checkbox" id="admin_feses" value="Feses" class="hidden sample-checkbox"><label for="admin_feses" class="block border rounded-md p-3 text-center cursor-pointer transition-all">💩 Feses</label></div><div><input type="checkbox" id="admin_bhp" value="BHP" class="hidden sample-checkbox"><label for="admin_bhp" class="block border rounded-md p-3 text-center cursor-pointer transition-all">📦 BHP</label></div></div></div><div id="adminBhpDetailsDiv" class="hidden my-4 col-span-2"><label for="adminBhpDetails" class="block text-sm font-medium text-gray-700 mb-1">Rincian Kebutuhan BHP</label><textarea id="adminBhpDetails" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);"></textarea></div></div><p id="adminFormError" class="text-red-600 text-sm text-center col-span-2 mb-4"></p><div class="flex justify-end space-x-3 mt-4"><button type="button" onclick="closeModal('adminAddOrderModal')" class="btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg">Batal</button><button type="submit" class="btn text-white font-semibold py-2 px-4 rounded-lg" style="background-color: var(--color-primary);" onmouseover="this.style.backgroundColor='var(--color-primary-dark)'" onmouseout="this.style.backgroundColor='var(--color-primary)'">Simpan</button></div></form></div></div>
+    <div id="clientAddOrderModal" class="modal fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden opacity-0"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95 opacity-0"><h2 class="text-2xl font-bold mb-4" style="color: var(--color-primary);">Buat Permintaan Pickup</h2><p class="text-gray-500 mb-4">Order untuk: <span id="clientModalClinicName" class="font-bold"></span></p><form id="clientAddOrderForm"><div class="mb-4 col-span-2"><label class="block text-sm font-medium text-gray-700 mb-2">Pilih Jenis Sampel</label><div id="clientSampleTypes" class="grid grid-cols-2 gap-2"><div><input type="checkbox" id="client_darah" value="Darah" class="hidden sample-checkbox"><label for="client_darah" class="block border rounded-md p-3 text-center cursor-pointer transition-all">🩸 Darah</label></div><div><input type="checkbox" id="client_urine" value="Urine" class="hidden sample-checkbox"><label for="client_urine" class="block border rounded-md p-3 text-center cursor-pointer transition-all">💧 Urine</label></div><div><input type="checkbox" id="client_feses" value="Feses" class="hidden sample-checkbox"><label for="client_feses" class="block border rounded-md p-3 text-center cursor-pointer transition-all">💩 Feses</label></div><div><input type="checkbox" id="client_bhp" value="BHP" class="hidden sample-checkbox"><label for="client_bhp" class="block border rounded-md p-3 text-center cursor-pointer transition-all">📦 BHP</label></div></div></div><div id="clientBhpDetailsDiv" class="hidden my-4"><label for="clientBhpDetails" class="block text-sm font-medium text-gray-700 mb-1">Rincian Kebutuhan BHP</label><textarea id="clientBhpDetails" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);"></textarea></div><div class="mb-4"><label for="clientShift" class="block text-sm font-medium text-gray-700 mb-1">Shift</label><select id="clientShift" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);" required><option value="Shift 1">Shift 1 (08.00 - 14.00 WITA)</option><option value="Shift 2">Shift 2 (14.00 - 21.00 WITA)</option></select></div><div class="mb-4"><label for="clientRegionalArea" class="block text-sm font-medium text-gray-700 mb-1">Area Regional</label><select id="clientRegionalArea" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);" required><option>CANGGU</option><option>SEMINYAK</option><option>KUTA</option><option>DENPASAR</option><option>UBUD</option><option>PECATU</option><option>ULUWATU</option><option>LAINNYA</option></select></div><p id="clientFormError" class="text-red-600 text-sm text-center mb-4"></p><div class="flex justify-end space-x-3 mt-2"><button type="button" onclick="closeModal('clientAddOrderModal')" class="btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg">Batal</button><button type="submit" class="btn text-white font-semibold py-2 px-4 rounded-lg" style="background-color: var(--color-primary);" onmouseover="this.style.backgroundColor='var(--color-primary-dark)'" onmouseout="this.style.backgroundColor='var(--color-primary)'">Kirim</button></div></form></div></div>
+    <div id="issueModal" class="modal fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden opacity-0"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95 opacity-0"><h2 class="text-2xl font-bold mb-4">Laporkan Kendala</h2><form id="issueForm"><input type="hidden" id="issueOrderId"><div class="mb-4"><label for="issueDescription" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label><textarea id="issueDescription" rows="4" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);" required></textarea></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('issueModal')" class="btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg">Batal</button><button type="submit" class="btn text-white font-semibold py-2 px-4 rounded-lg" style="background-color: var(--color-accent-red);">Kirim</button></div></form></div></div>
+    <div id="verificationModal" class="modal fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden opacity-0"><div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95 opacity-0"><h2 class="text-2xl font-bold mb-4">Verifikasi Sampel</h2><form id="verificationForm"><input type="hidden" id="verificationOrderId"><div class="mb-4"><label for="sampleCount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Sampel</label><input type="number" id="sampleCount" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);" required></div><div class="mb-4"><label for="verificationNotes" class="block text-sm font-medium text-gray-700 mb-1">Catatan</label><textarea id="verificationNotes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);"></textarea></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('verificationModal')" class="btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg">Batal</button><button type="submit" class="btn text-white font-semibold py-2 px-4 rounded-lg" style="background-color: var(--color-secondary);">Konfirmasi</button></div></form></div></div>
+    <div id="assignCourierModal" class="modal fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden opacity-0"><div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl transform scale-95 opacity-0"><h2 class="text-2xl font-bold mb-4">Tugaskan Kurir</h2><form id="assignCourierForm"><input type="hidden" id="assignOrderId"><div class="mb-4"><label for="assignCourierSelector" class="block text-sm font-medium text-gray-700 mb-1">Pilih Kurir</label><select id="assignCourierSelector" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2" style="--tw-ring-color: var(--color-secondary);" required></select></div><div class="flex justify-end space-x-3 mt-6"><button type="button" onclick="closeModal('assignCourierModal')" class="btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg">Batal</button><button type="submit" class="btn text-white font-semibold py-2 px-4 rounded-lg" style="background-color: var(--color-primary);" onmouseover="this.style.backgroundColor='var(--color-primary-dark)'" onmouseout="this.style.backgroundColor='var(--color-primary)'">Tugaskan</button></div></form></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
@@ -147,7 +199,6 @@
         // --- AUTH & UI CONTROL ---
         async function authorizeUser(user) {
             const email = user.email;
-            // LANGKAH 2: Mencari data pengguna di Firestore, bukan di ACCESS_CONFIG
             const userRef = doc(db, "users", email);
 
             try {
@@ -443,13 +494,11 @@
             const exportDateFilter = document.getElementById('exportDateFilter');
             const courierFilterDiv = document.getElementById('courierFilterDiv');
 
-            // Hide all panels by default
             addOrderBtn.classList.add('hidden');
             courierStatusPanel.classList.add('hidden');
             filterPanel.classList.add('hidden');
             exportBtn.classList.add('hidden');
             
-            // Show panels based on role
             if (['admin', 'superuser', 'analis', 'kurir', 'client'].includes(role)) {
                 exportBtn.classList.remove('hidden');
                 exportDateFilter.classList.remove('hidden');
@@ -463,7 +512,6 @@
                 courierStatusPanel.classList.remove('hidden');
             }
             
-            // Setup Filter Panel
             if (['admin', 'superuser', 'analis', 'kurir', 'client'].includes(role)) {
                 filterPanel.classList.remove('hidden');
                 showCompletedDiv.classList.remove('hidden');
@@ -495,19 +543,19 @@
             couriersToRender.forEach(courier => {
                 let statusClass = '', statusIcon = '', buttonText = '', buttonClass = '';
                 switch(courier.status) {
-                    case 'Tersedia': statusClass = 'courier-status-tersedia text-green-600'; statusIcon = 'fa-solid fa-circle-check'; buttonText = 'Mulai Istirahat'; buttonClass = 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400'; break;
-                    case 'Istirahat': statusClass = 'courier-status-istirahat text-yellow-600'; statusIcon = 'fa-solid fa-mug-saucer'; buttonText = 'Selesai Istirahat'; buttonClass = 'bg-green-500 hover:bg-green-600 focus:ring-green-400'; break;
+                    case 'Tersedia': statusClass = 'courier-status-tersedia text-green-600'; statusIcon = 'fa-solid fa-circle-check'; buttonText = 'Mulai Istirahat'; buttonClass = 'bg-yellow-500 hover:bg-yellow-600'; break;
+                    case 'Istirahat': statusClass = 'courier-status-istirahat text-yellow-600'; statusIcon = 'fa-solid fa-mug-saucer'; buttonText = 'Selesai Istirahat'; buttonClass = 'bg-green-500 hover:bg-green-600'; break;
                     case 'Menjalankan Tugas': statusClass = 'courier-status-tugas text-blue-600'; statusIcon = 'fa-solid fa-motorcycle'; buttonText = 'Mulai Istirahat'; buttonClass = 'bg-gray-400 cursor-not-allowed'; break;
                 }
                 const canToggleBreak = (['admin', 'superuser'].includes(currentUser.role) && courier.status !== 'Menjalankan Tugas') || (currentUser.role === 'kurir' && courier.status !== 'Menjalankan Tugas' && courier.name === currentUser.name);
                 
                 list.innerHTML += `
-                <div class="border-l-4 ${statusClass} p-4 bg-white rounded-lg flex flex-col justify-between shadow-sm">
+                <div class="card border-l-4 ${statusClass} p-4 bg-white rounded-lg flex flex-col justify-between shadow-md">
                     <div>
                         <p class="font-bold text-lg text-gray-800">${courier.name}</p>
                         <p class="text-sm font-medium mt-1"><i class="${statusIcon} mr-2"></i>${courier.status}</p>
                     </div>
-                    ${canToggleBreak ? `<div class="mt-4"><button onclick="toggleBreak('${courier.name}')" class="w-full text-white text-sm font-bold py-2 px-3 rounded-lg ${buttonClass} transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-opacity-50">${buttonText}</button></div>` : ''}
+                    ${canToggleBreak ? `<div class="mt-4"><button onclick="toggleBreak('${courier.name}')" class="btn w-full text-white text-sm font-bold py-2 px-3 rounded-lg ${buttonClass}">${buttonText}</button></div>` : ''}
                 </div>`;
             });
         }
@@ -555,7 +603,7 @@
             
             if (ordersToDisplay.length === 0) {
                 const message = (ordersForCurrentShift.length > 0) ? 'Semua orderan aktif pada shift ini telah selesai.' : 'Tidak ada orderan pada shift ini.';
-                orderList.innerHTML = `<div class="col-span-full text-center p-10 bg-white rounded-xl shadow"><i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i><p class="text-gray-500">${message}</p></div>`;
+                orderList.innerHTML = `<div class="col-span-full text-center p-10 bg-white rounded-xl shadow-lg"><i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i><p class="text-gray-500">${message}</p></div>`;
                 return;
             }
 
@@ -571,24 +619,26 @@
                 const { role, name } = currentUser;
 
                 if ((role === 'admin' || role === 'superuser') && !order.courier && order.status === 'Baru') {
-                    actionButtons += `<button onclick="openModal('assignCourierModal', '${order.id}')" class="bg-gray-700 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-gray-800 transition">Tugaskan</button>`;
+                    actionButtons += `<button onclick="openModal('assignCourierModal', '${order.id}')" class="btn bg-gray-700 text-white font-semibold py-1 px-3 rounded-md text-sm">Tugaskan</button>`;
                 } else if (role === 'kurir' && !order.courier && order.status === 'Baru') {
-                    actionButtons += `<button onclick="selfAssign('${order.id}')" class="bg-green-600 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-700 transition">Ambil Tugas</button>`;
+                    actionButtons += `<button onclick="selfAssign('${order.id}')" class="btn bg-green-600 text-white font-semibold py-1 px-3 rounded-md text-sm">Ambil Tugas</button>`;
                 } else if (role === 'kurir' && order.courier === name) {
-                    if (order.status === 'Menuju Faskes') actionButtons += `<button onclick="updateStatus('${order.id}', 'Di Faskes')" class="bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-indigo-600 transition">Tiba di Lokasi</button>`;
-                    if (order.status === 'Di Faskes') actionButtons += `<button onclick="updateStatus('${order.id}', 'Kembali ke Lab')" class="bg-yellow-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-yellow-600 transition">Kembali ke Lab</button>`;
-                    if (order.status === 'Kembali ke Lab') actionButtons += `<button onclick="updateStatus('${order.id}', 'Selesai')" class="bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-600 transition">Selesai di Lab</button>`;
-                    if (order.status === 'Kendala') actionButtons += `<button onclick="updateStatus('${order.id}', 'Kembali ke Lab')" class="bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-green-600 transition">Lanjutkan</button>`;
-                    if (!['Selesai', 'Terverifikasi', 'Dibatalkan'].includes(order.status)) actionButtons += `<button onclick="openModal('issueModal', '${order.id}')" class="bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-red-600 transition">Kendala</button>`;
+                    if (order.status === 'Menuju Faskes') actionButtons += `<button onclick="updateStatus('${order.id}', 'Di Faskes')" class="btn bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm">Tiba di Lokasi</button>`;
+                    if (order.status === 'Di Faskes') actionButtons += `<button onclick="updateStatus('${order.id}', 'Kembali ke Lab')" class="btn text-white font-semibold py-1 px-3 rounded-md text-sm" style="background-color:var(--color-accent-gold);" onmouseover="this.style.backgroundColor='var(--color-accent-gold-dark)'" onmouseout="this.style.backgroundColor='var(--color-accent-gold)'">Kembali ke Lab</button>`;
+                    if (order.status === 'Kembali ke Lab') actionButtons += `<button onclick="updateStatus('${order.id}', 'Selesai')" class="btn bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm">Selesai di Lab</button>`;
+                    if (order.status === 'Kendala') actionButtons += `<button onclick="updateStatus('${order.id}', 'Kembali ke Lab')" class="btn bg-green-500 text-white font-semibold py-1 px-3 rounded-md text-sm">Lanjutkan</button>`;
+                    if (!['Selesai', 'Terverifikasi', 'Dibatalkan'].includes(order.status)) actionButtons += `<button onclick="openModal('issueModal', '${order.id}')" class="btn bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-sm">Kendala</button>`;
                 } else if (role === 'analis' && order.status === 'Selesai') {
-                    actionButtons += `<button onclick="openModal('verificationModal', '${order.id}')" class="bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-indigo-600 transition">Verifikasi</button>`;
+                    actionButtons += `<button onclick="openModal('verificationModal', '${order.id}')" class="btn bg-indigo-500 text-white font-semibold py-1 px-3 rounded-md text-sm">Verifikasi</button>`;
                 } else if (role === 'client' && order.status === 'Baru') {
-                    actionButtons += `<button onclick="cancelOrder('${order.id}')" class="bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-sm hover:bg-red-600 transition">Batalkan</button>`;
+                    actionButtons += `<button onclick="cancelOrder('${order.id}')" class="btn bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-sm">Batalkan</button>`;
                 }
 
                 let bhpDetailsHTML = order.bhpDetails ? `<div class="mt-2 pt-2 border-t border-gray-100"><p class="font-semibold text-gray-500 text-xs uppercase mb-1">Rincian BHP</p><p class="text-sm text-gray-600 bg-gray-50 p-2 rounded-md whitespace-pre-wrap">${order.bhpDetails}</p></div>` : '';
+                
+                const citoClass = order.orderType === 'CITO' ? 'card-cito' : 'bg-white';
 
-                const card = `<div class="bg-white rounded-xl shadow-lg p-5 flex flex-col justify-between" id="order-${order.id}"><div><div class="flex justify-between items-start mb-3"><div><h3 class="text-xl font-bold text-gray-900">${order.clinicName}</h3><p class="text-sm text-gray-500">Kurir: <span class="font-semibold">${order.courier || 'Belum ditugaskan'}</span></p></div><div class="${statusInfo.class} status-badge"><i class="${statusInfo.icon} mr-2"></i><span>${order.status}</span></div></div><div class="flex items-center text-xs text-gray-500 space-x-4 mb-3 pb-3 border-b border-gray-100"><span><i class="fas fa-map-marker-alt w-4 text-center mr-1 text-gray-400"></i> ${order.regionalArea}</span><span class="font-semibold text-blue-600"><i class="fas fa-tags w-4 text-center mr-1 text-gray-400"></i> ${order.orderType}</span></div><div class="my-3"><p class="font-semibold text-gray-500 text-xs uppercase mb-2">Item Pickup</p><div class="flex flex-wrap gap-2">${(order.sampleTypes || []).map(s => `<span class="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">${s}</span>`).join('')}</div></div>${bhpDetailsHTML}<div class="space-y-2 text-sm text-gray-600 my-3"><p class="font-semibold text-gray-500 text-xs uppercase mt-3">Timeline Tracking</p><div class="flex justify-between items-center"><span><i class="far fa-clock w-5 text-gray-400"></i> Dibuat:</span> <span class="font-bold text-lg">${formatTimestamp(order.timestamps.ordered)}</span></div><div class="flex justify-between"><span><i class="fas fa-route w-5 text-gray-400"></i> Menuju:</span> <span class="font-medium">${formatTimestamp(order.timestamps.enrouteToFacility)}</span></div><div class="flex justify-between"><span><i class="fas fa-hospital w-5 text-gray-400"></i> Tiba:</span> <span class="font-medium">${formatTimestamp(order.timestamps.arrivedAtFacility)}</span></div><div class="flex justify-between"><span><i class="fas fa-motorcycle w-5 text-gray-400"></i> Kembali:</span> <span class="font-medium">${formatTimestamp(order.timestamps.returningToLab)}</span></div><div class="flex justify-between"><span><i class="fas fa-check-circle w-5 text-gray-400"></i> Sampai:</span> <span class="font-medium">${formatTimestamp(order.timestamps.completed)}</span></div></div>${order.status === 'Kendala' ? `<div class="bg-red-50 p-3 rounded-lg mt-4 border-l-4 border-red-400"><p class="text-sm font-semibold text-red-800"><i class="fas fa-triangle-exclamation mr-2"></i>Kendala (${formatTimestamp(order.timestamps.issue)}):</p><p class="text-sm text-red-700 mt-1">${order.issueDescription}</p></div>` : ''}${order.status === 'Terverifikasi' ? `<div class="bg-indigo-50 p-3 rounded-lg mt-4 border-l-4 border-indigo-400"><p class="text-sm font-semibold text-indigo-800"><i class="fas fa-user-check mr-2"></i>Diverifikasi (${formatTimestamp(order.verifiedDetails.timestamp, true)}):</p><p class="text-sm text-indigo-700 mt-1"><b>${order.verifiedDetails.sampleCount} sampel</b>. Catatan: ${order.verifiedDetails.notes || '-'}</p></div>` : ''}</div><div class="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t border-gray-100">${actionButtons}</div></div>`;
+                const card = `<div class="card ${citoClass} rounded-xl shadow-lg p-5 flex flex-col justify-between" id="order-${order.id}"><div><div class="flex justify-between items-start mb-3"><div><h3 class="text-xl font-bold" style="color: var(--color-primary);">${order.clinicName}</h3><p class="text-sm text-gray-500">Kurir: <span class="font-semibold">${order.courier || 'Belum ditugaskan'}</span></p></div><div class="${statusInfo.class} status-badge"><i class="${statusInfo.icon} mr-2"></i><span>${order.status}</span></div></div><div class="flex items-center text-xs text-gray-500 space-x-4 mb-3 pb-3 border-b border-gray-100"><span><i class="fas fa-map-marker-alt w-4 text-center mr-1 text-gray-400"></i> ${order.regionalArea}</span><span class="font-semibold" style="color: var(--color-secondary);"><i class="fas fa-tags w-4 text-center mr-1 text-gray-400"></i> ${order.orderType}</span></div><div class="my-3"><p class="font-semibold text-gray-500 text-xs uppercase mb-2">Item Pickup</p><div class="flex flex-wrap gap-2">${(order.sampleTypes || []).map(s => `<span class="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">${s}</span>`).join('')}</div></div>${bhpDetailsHTML}<div class="space-y-2 text-sm text-gray-600 my-3"><p class="font-semibold text-gray-500 text-xs uppercase mt-3">Timeline Tracking</p><div class="flex justify-between items-center"><span><i class="far fa-clock w-5 text-gray-400"></i> Dibuat:</span> <span class="font-bold text-lg">${formatTimestamp(order.timestamps.ordered)}</span></div><div class="flex justify-between"><span><i class="fas fa-route w-5 text-gray-400"></i> Menuju:</span> <span class="font-medium">${formatTimestamp(order.timestamps.enrouteToFacility)}</span></div><div class="flex justify-between"><span><i class="fas fa-hospital w-5 text-gray-400"></i> Tiba:</span> <span class="font-medium">${formatTimestamp(order.timestamps.arrivedAtFacility)}</span></div><div class="flex justify-between"><span><i class="fas fa-motorcycle w-5 text-gray-400"></i> Kembali:</span> <span class="font-medium">${formatTimestamp(order.timestamps.returningToLab)}</span></div><div class="flex justify-between"><span><i class="fas fa-check-circle w-5 text-gray-400"></i> Sampai:</span> <span class="font-medium">${formatTimestamp(order.timestamps.completed)}</span></div></div>${order.status === 'Kendala' ? `<div class="bg-red-50 p-3 rounded-lg mt-4 border-l-4 border-red-400"><p class="text-sm font-semibold text-red-800"><i class="fas fa-triangle-exclamation mr-2"></i>Kendala (${formatTimestamp(order.timestamps.issue)}):</p><p class="text-sm text-red-700 mt-1">${order.issueDescription}</p></div>` : ''}${order.status === 'Terverifikasi' ? `<div class="bg-indigo-50 p-3 rounded-lg mt-4 border-l-4 border-indigo-400"><p class="text-sm font-semibold text-indigo-800"><i class="fas fa-user-check mr-2"></i>Diverifikasi (${formatTimestamp(order.verifiedDetails.timestamp, true)}):</p><p class="text-sm text-indigo-700 mt-1"><b>${order.verifiedDetails.sampleCount} sampel</b>. Catatan: ${order.verifiedDetails.notes || '-'}</p></div>` : ''}</div><div class="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t border-gray-100">${actionButtons}</div></div>`;
                 orderList.innerHTML += card;
             });
         }
@@ -621,9 +671,20 @@
             } 
             modal.classList.remove('hidden'); 
             document.body.classList.add('modal-active'); 
-            setTimeout(() => modal.querySelector('.modal-content').classList.remove('scale-95'), 10); 
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.modal-content').classList.remove('scale-95', 'opacity-0');
+            }, 10); 
         }
-        function closeModal(modalId) { const modal = document.getElementById(modalId); modal.querySelector('.modal-content').classList.add('scale-95'); setTimeout(() => { modal.classList.add('hidden'); document.body.classList.remove('modal-active'); }, 250); }
+        function closeModal(modalId) { 
+            const modal = document.getElementById(modalId); 
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-content').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { 
+                modal.classList.add('hidden'); 
+                document.body.classList.remove('modal-active'); 
+            }, 300); 
+        }
         
         function populateSelectors() {
             const adminCourierSelector = document.getElementById('adminCourier');
