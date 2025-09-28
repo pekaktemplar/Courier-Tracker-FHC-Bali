@@ -45,6 +45,16 @@
                 <img class="w-5 h-5 mr-2" src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo">
                 Masuk dengan Google
             </button>
+            <!-- Development Login Fallback -->
+            <div id="devLogin" class="hidden w-full space-y-4 text-left pt-4 border-t">
+                <p class="text-sm text-orange-800 bg-orange-100 p-3 rounded-md border border-orange-200">
+                    <i class="fas fa-wrench mr-2"></i> <b>Mode Login Pengembangan</b>
+                    <span class="block mt-1">Pilih pengguna di bawah ini untuk masuk.</span>
+                </p>
+                <label for="devUserSelect" class="block text-sm font-medium text-gray-700">Pilih Pengguna:</label>
+                <select id="devUserSelect" class="w-full p-2 border border-gray-300 rounded-lg"></select>
+                <button id="devLoginBtn" class="w-full py-2.5 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">Masuk sebagai User Terpilih</button>
+            </div>
             <p id="loginError" class="text-red-500 text-sm mt-2"></p>
         </div>
     </div>
@@ -115,7 +125,7 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, query, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-        // --- KONFIGURASI FIREBASE ---
+        // --- KONFIGURASI FIREBASE & AKSES PENGGUNA ---
         const firebaseConfig = {
             apiKey: "AIzaSyAB86yQw184i-s_Vq4A4GA4bLl2Ujbiug8",
             authDomain: "courier-tracker-fhc-bali.firebaseapp.com",
@@ -125,6 +135,22 @@
             appId: "1:480867344576:web:8b377468854fcb8b49cd25"
         };
         
+        const ACCESS_CONFIG = {
+            superusers: ['pekaktemplar@gmail.com'],
+            admins: ['admin.lab.bali@example.com'],
+            couriers: {
+                'aryatiniputu@gmail.com': 'Made',
+                'firza.kurir@example.com': 'Firza',
+                'nanang.kurir@example.com': 'Nanang',
+                'krisna.kurir@example.com': 'Krisna'
+            },
+            analysts: ['aryati.suryaningsih@gmail.com'],
+            clients: {
+                'agusbudiarthalg@gmail.com': 1,
+                'klinik.sejahtera@example.com': 2
+            }
+        };
+
         // --- INISIALISASI APLIKASI ---
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -143,50 +169,84 @@
         let localCouriers = [];
         let unsubscribeOrders = null;
         let unsubscribeCouriers = null;
+        let isDevMode = false;
 
-        // --- AUTH & UI CONTROL ---
-        async function authorizeUser(user) {
-            const email = user.email;
-            // LANGKAH 2: Mencari data pengguna di Firestore, bukan di ACCESS_CONFIG
-            const userRef = doc(db, "users", email);
-
-            try {
-                const userDoc = await getDoc(userRef);
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    let roleText = '';
-                    switch(userData.role) {
-                        case 'superuser': roleText = 'Super User'; break;
-                        case 'admin': roleText = 'Admin'; break;
-                        case 'kurir': roleText = `Kurir (${userData.name})`; break;
-                        case 'analis': roleText = 'Analis Lab'; break;
-                        case 'client': roleText = `Client (${userData.name})`; break;
-                        default: roleText = userData.role;
+        // --- FUNGSI SINKRONISASI KURIR ---
+        async function syncCouriersWithDatabase() {
+            const courierConfig = ACCESS_CONFIG.couriers;
+            for (const email in courierConfig) {
+                const name = courierConfig[email];
+                // FIX: Pointing to the correct fresh collection
+                const courierRef = doc(db, "couriers_final", email);
+                try {
+                    const docSnap = await getDoc(courierRef);
+                    if (!docSnap.exists()) {
+                        await setDoc(courierRef, { name: name, status: 'Tersedia' });
                     }
-
-                    currentUser = { 
-                        role: userData.role, 
-                        name: userData.name || user.displayName, 
-                        clinicId: userData.clinicId || null, 
-                        email: email 
-                    };
-                    
-                    document.getElementById('roleDisplay').textContent = roleText;
-                    document.getElementById('loginContainer').classList.add('hidden');
-                    document.getElementById('mainAppContainer').classList.remove('hidden');
-                    
-                    setupUIForRole();
-                    subscribeToData();
-                } else {
-                    document.getElementById('loginError').textContent = 'Anda tidak memiliki akses.';
-                    logout();
+                } catch (error) {
+                    console.error(`Gagal menyinkronkan kurir ${name}:`, error);
                 }
-            } catch (error) {
-                console.error("Gagal memverifikasi pengguna:", error);
-                document.getElementById('loginError').textContent = 'Terjadi kesalahan saat verifikasi.';
+            }
+        }
+        
+        // --- AUTH & UI CONTROL ---
+        function authorizeUser(user) {
+            const email = user.email;
+            let role = null, name = user.displayName, clinicId = null, roleText = '';
+            
+            if (ACCESS_CONFIG.superusers.includes(email)) { role = 'superuser'; roleText = 'Super User'; } 
+            else if (ACCESS_CONFIG.admins.includes(email)) { role = 'admin'; roleText = 'Admin'; } 
+            else if (ACCESS_CONFIG.couriers[email]) { role = 'kurir'; name = ACCESS_CONFIG.couriers[email]; roleText = `Kurir (${name})`; } 
+            else if (ACCESS_CONFIG.analysts.includes(email)) { role = 'analis'; roleText = 'Analis Lab'; } 
+            else if (ACCESS_CONFIG.clients[email]) { role = 'client'; clinicId = ACCESS_CONFIG.clients[email]; const clinic = clinics.find(c => c.id === clinicId); name = clinic ? clinic.name : 'Klinik Tidak Dikenal'; roleText = `Client (${name})`; }
+
+            if (role) {
+                currentUser = { role, name, clinicId, email };
+                document.getElementById('roleDisplay').textContent = roleText;
+                document.getElementById('loginContainer').classList.add('hidden');
+                document.getElementById('mainAppContainer').classList.remove('hidden');
+                
+                if (role === 'admin' || role === 'superuser') {
+                    syncCouriersWithDatabase();
+                }
+
+                setupUIForRole();
+                subscribeToData();
+            } else {
+                document.getElementById('loginError').textContent = 'Anda tidak memiliki akses.';
                 logout();
-            } finally {
-                document.getElementById('loadingSpinner').classList.add('hidden');
+            }
+            document.getElementById('loadingSpinner').classList.add('hidden');
+        }
+
+        function setupDevLogin() {
+            isDevMode = true;
+            document.getElementById('loginWithGoogleBtn').classList.add('hidden');
+            document.getElementById('devLogin').classList.remove('hidden');
+            const allUsers = [];
+            ACCESS_CONFIG.superusers.forEach(email => allUsers.push({ email, name: `(Superuser) ${email.split('@')[0]}` }));
+            ACCESS_CONFIG.admins.forEach(email => allUsers.push({ email, name: `(Admin) ${email.split('@')[0]}` }));
+            Object.entries(ACCESS_CONFIG.couriers).forEach(([email, name]) => allUsers.push({ email, name: `(Kurir) ${name}` }));
+            ACCESS_CONFIG.analysts.forEach(email => allUsers.push({ email, name: `(Analis) ${email.split('@')[0]}` }));
+            Object.entries(ACCESS_CONFIG.clients).forEach(([email, clinicId]) => {
+                const clinic = clinics.find(c => c.id === clinicId);
+                allUsers.push({ email, name: `(Client) ${clinic ? clinic.name : email}` });
+            });
+            const select = document.getElementById('devUserSelect');
+            select.innerHTML = '';
+            allUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.email;
+                option.textContent = user.name;
+                select.appendChild(option);
+            });
+        }
+
+        function handleDevLogin() {
+            const selectedEmail = document.getElementById('devUserSelect').value;
+            if (selectedEmail) {
+                const fakeUser = { email: selectedEmail, displayName: 'Pengguna Dev' };
+                authorizeUser(fakeUser);
             }
         }
 
@@ -194,7 +254,11 @@
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider).catch(error => {
                 console.error("Login Gagal:", error);
-                document.getElementById('loginError').textContent = 'Gagal login. Coba lagi.';
+                if (error.code === 'auth/unauthorized-domain') {
+                    setupDevLogin();
+                } else {
+                    document.getElementById('loginError').textContent = 'Gagal login. Coba lagi.';
+                }
                 document.getElementById('loadingSpinner').classList.add('hidden');
             });
         }
@@ -202,11 +266,18 @@
         function logout() {
             if (unsubscribeOrders) unsubscribeOrders();
             if (unsubscribeCouriers) unsubscribeCouriers();
-            signOut(auth);
+            if (isDevMode) {
+                window.location.reload();
+            } else {
+                signOut(auth);
+            }
         }
 
         onAuthStateChanged(auth, (user) => {
-            if (user) { authorizeUser(user); } 
+            if (user) { 
+                isDevMode = false;
+                authorizeUser(user);
+            } 
             else {
                 currentUser = { role: null, name: null, clinicId: null, email: null };
                 document.getElementById('mainAppContainer').classList.add('hidden');
@@ -218,6 +289,7 @@
 
         // --- FIRESTORE REAL-TIME DATA SUBSCRIPTION ---
         function subscribeToData() {
+            // Menggunakan koleksi baru yang bersih untuk data order dan kurir
             const ordersQuery = query(collection(db, "orders_final"));
             unsubscribeOrders = onSnapshot(ordersQuery, (snapshot) => {
                 localOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -488,7 +560,10 @@
         function renderCourierStatus() {
             const list = document.getElementById('courierStatusList');
             list.innerHTML = '';
+            
+            // FIX: Ensure the list of couriers is unique by name to prevent rendering duplicates.
             const uniqueCouriersByName = Array.from(new Map(localCouriers.map(c => [c.name, c])).values());
+
             const couriersToRender = currentUser.role === 'kurir' ? uniqueCouriersByName.filter(c => c.name === currentUser.name) : uniqueCouriersByName;
             couriersToRender.sort((a, b) => a.name.localeCompare(b.name)); 
             
@@ -527,6 +602,7 @@
             document.getElementById('activeShiftDisplay').textContent = currentActiveShift;
 
             let baseOrders;
+            // UPDATE: Kurir now sees the same as admin
             if (currentUser.role === 'client') {
                 baseOrders = localOrders.filter(o => o.clinicId === currentUser.clinicId);
             } else { // admin, superuser, analis, kurir
@@ -535,6 +611,7 @@
 
             let ordersForCurrentShift = baseOrders.filter(o => o.shift === currentActiveShift);
             
+            // Admin/Superuser can use the courier filter
             if (['admin', 'superuser'].includes(currentUser.role)) {
                 const selectedCourier = document.getElementById('courierFilter').value;
                 if (selectedCourier !== 'semua') {
@@ -667,6 +744,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('loginWithGoogleBtn').addEventListener('click', handleGoogleLogin);
+            document.getElementById('devLoginBtn').addEventListener('click', handleDevLogin);
             document.getElementById('adminAddOrderForm').addEventListener('submit', adminAddOrder);
             document.getElementById('clientAddOrderForm').addEventListener('submit', clientAddOrder);
             document.getElementById('assignCourierForm').addEventListener('submit', assignCourier);
@@ -683,4 +761,7 @@
     </script>
 </body>
 </html>
+
+
+
 
