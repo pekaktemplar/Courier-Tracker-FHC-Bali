@@ -176,8 +176,7 @@
             const courierConfig = ACCESS_CONFIG.couriers;
             for (const email in courierConfig) {
                 const name = courierConfig[email];
-                // FIX: Pointing to the correct fresh collection
-                const courierRef = doc(db, "couriers_final", email);
+                const courierRef = doc(db, "couriers", email);
                 try {
                     const docSnap = await getDoc(courierRef);
                     if (!docSnap.exists()) {
@@ -290,14 +289,14 @@
         // --- FIRESTORE REAL-TIME DATA SUBSCRIPTION ---
         function subscribeToData() {
             // Menggunakan koleksi baru yang bersih untuk data order dan kurir
-            const ordersQuery = query(collection(db, "orders_final"));
+            const ordersQuery = query(collection(db, "orders_fresh"));
             unsubscribeOrders = onSnapshot(ordersQuery, (snapshot) => {
                 localOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderOrders();
                 updateCourierDutyStatus();
             });
 
-            const couriersQuery = query(collection(db, "couriers_final"));
+            const couriersQuery = query(collection(db, "couriers_fresh"));
             unsubscribeCouriers = onSnapshot(couriersQuery, (snapshot) => {
                 localCouriers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 populateSelectors();
@@ -339,7 +338,7 @@
             };
             
             try {
-                await addDoc(collection(db, "orders_final"), newOrder);
+                await addDoc(collection(db, "orders_fresh"), newOrder);
                 closeModal('adminAddOrderModal');
                 event.target.reset();
                 document.getElementById('adminBhpDetailsDiv').classList.add('hidden');
@@ -379,7 +378,7 @@
             };
             
             try {
-                await addDoc(collection(db, "orders_final"), newOrder);
+                await addDoc(collection(db, "orders_fresh"), newOrder);
                 closeModal('clientAddOrderModal');
                 event.target.reset();
                 document.getElementById('clientBhpDetailsDiv').classList.add('hidden');
@@ -390,7 +389,7 @@
             event.preventDefault();
             const orderId = document.getElementById('assignOrderId').value;
             const courierName = document.getElementById('assignCourierSelector').value;
-            const orderRef = doc(db, "orders_final", orderId);
+            const orderRef = doc(db, "orders_fresh", orderId);
             try {
                 await updateDoc(orderRef, { courier: courierName });
                 closeModal('assignCourierModal');
@@ -398,7 +397,7 @@
         }
         
         async function updateStatus(orderId, newStatus) {
-            const orderRef = doc(db, "orders_final", orderId);
+            const orderRef = doc(db, "orders_fresh", orderId);
             const now = new Date().toISOString();
             let updates = { status: newStatus };
 
@@ -415,7 +414,7 @@
             event.preventDefault();
             const orderId = document.getElementById('issueOrderId').value;
             const description = document.getElementById('issueDescription').value;
-            const orderRef = doc(db, "orders_final", orderId);
+            const orderRef = doc(db, "orders_fresh", orderId);
             try {
                 await updateDoc(orderRef, {
                     status: 'Kendala',
@@ -430,7 +429,7 @@
         async function submitVerification(event) {
             event.preventDefault();
             const orderId = document.getElementById('verificationOrderId').value;
-            const orderRef = doc(db, "orders_final", orderId);
+            const orderRef = doc(db, "orders_fresh", orderId);
             try {
                 await updateDoc(orderRef, {
                     status: 'Terverifikasi',
@@ -445,7 +444,7 @@
         
         async function selfAssign(orderId) {
             if (!currentUser || currentUser.role !== 'kurir') return;
-            const orderRef = doc(db, "orders_final", orderId);
+            const orderRef = doc(db, "orders_fresh", orderId);
             try {
                 await updateDoc(orderRef, {
                     courier: currentUser.name,
@@ -457,7 +456,7 @@
 
         async function cancelOrder(orderId) {
             if (!currentUser || currentUser.role !== 'client') return;
-            const orderRef = doc(db, "orders_final", orderId);
+            const orderRef = doc(db, "orders_fresh", orderId);
             try {
                 await updateDoc(orderRef, { status: 'Dibatalkan' });
             } catch (e) { console.error("Gagal membatalkan order: ", e); }
@@ -467,7 +466,7 @@
             const courier = localCouriers.find(c => c.name === courierName);
             if (!courier) return;
             const newStatus = courier.status === 'Istirahat' ? 'Tersedia' : 'Istirahat';
-            const courierRef = doc(db, "couriers_final", courier.id);
+            const courierRef = doc(db, "couriers_fresh", courier.id);
             if (courier.status !== 'Menjalankan Tugas') {
                 await updateDoc(courierRef, { status: newStatus });
             }
@@ -483,7 +482,7 @@
                 const hasActiveTask = localOrders.some(o => o.shift === currentActiveShift && o.courier === courier.name && !['Selesai', 'Terverifikasi', 'Dibatalkan'].includes(o.status));
                 const newStatus = hasActiveTask ? 'Menjalankan Tugas' : 'Tersedia';
                 if (courier.status !== 'Istirahat' && courier.status !== newStatus) {
-                    const courierRef = doc(db, "couriers_final", courier.id);
+                    const courierRef = doc(db, "couriers_fresh", courier.id);
                     await updateDoc(courierRef, { status: newStatus });
                 }
             }
@@ -761,7 +760,5 @@
     </script>
 </body>
 </html>
-
-
 
 
